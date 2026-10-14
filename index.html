@@ -497,9 +497,31 @@ $("go").onclick=()=>{const v=$("src").value;$("src").value="";unlockSpeech();tra
 $("src").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("go").click()}});
 
 // ---------- 朗讀 ----------
+// iPhone 只設 lang 有時仍用預設中文聲音念日韓文（只念出漢字），所以要明確指定該語言的聲音
+let voices = [];
+function loadVoices(){ try{ voices = speechSynthesis.getVoices() || [] }catch{} }
+if(canSpeak){ loadVoices(); try{ speechSynthesis.addEventListener("voiceschanged", loadVoices) }catch{} }
+function pickVoice(lang){
+  if(!voices.length) loadVoices();
+  const norm = v => (v.lang||"").toLowerCase().replace("_","-");
+  const l = lang.toLowerCase(), base = l.split("-")[0];
+  const same = voices.filter(v => norm(v) === l);
+  const near = voices.filter(v => norm(v).startsWith(base));
+  const pool = same.length ? same : near;
+  return pool.find(v => v.localService) || pool[0] || null;
+}
+const LANG_NAME = {"ja-JP":"日文","ko-KR":"韓文","zh-TW":"中文"};
+function missingVoice(lang){
+  if(missingVoice[lang]) return; missingVoice[lang] = true;
+  toast("這支手機沒有"+(LANG_NAME[lang]||"這個語言")+"朗讀聲音。iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音，下載"+(LANG_NAME[lang]||"")+"聲音");
+}
 function speak(text,lang){
   if(!canSpeak||!text) return;
-  try{const u=new SpeechSynthesisUtterance(text);u.lang=lang;u.rate=.95;speechSynthesis.cancel();speechSynthesis.speak(u)}catch{}
+  try{
+    const u=new SpeechSynthesisUtterance(text); u.lang=lang; u.rate=.95;
+    const v=pickVoice(lang); if(v) u.voice=v; else missingVoice(lang);
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  }catch{}
 }
 
 // ---------- 國家、畫面 ----------
