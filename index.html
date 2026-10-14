@@ -249,21 +249,8 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
         <button type="button" data-g="male" aria-pressed="false">男</button>
         <button type="button" data-g="female" aria-pressed="false">女</button>
       </div>
-      <p class="hint">朗讀你說的話時用同性別的聲音；翻成日文時，自稱用語也會符合性別。</p>
+      <p class="hint">翻成日文時，自稱和語氣會符合性別。</p>
     </div>
-    <div class="field">
-      <label>對方的聲音</label>
-      <div class="seg" role="group" aria-label="對方的聲音" id="themGSeg" style="align-self:flex-start">
-        <button type="button" data-g="male" aria-pressed="false">男聲</button>
-        <button type="button" data-g="female" aria-pressed="true">女聲</button>
-      </div>
-      <p class="hint">對方的話翻成中文念給你聽時，用這個聲音。</p>
-    </div>
-    <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="btn" id="tryMy">試聽我的聲音</button>
-      <button type="button" class="btn" id="tryThem">試聽對方的聲音</button>
-    </div>
-    <p class="hint" id="voiceInfo"></p>
     <div class="field">
       <label>介面顏色</label>
       <div class="skins" role="group" aria-label="介面顏色" id="skinSeg"></div>
@@ -629,46 +616,27 @@ $("src").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.pr
 let voices = [];
 function loadVoices(){ try{ voices = speechSynthesis.getVoices() || [] }catch{} }
 if(canSpeak){ loadVoices(); try{ speechSynthesis.addEventListener("voiceschanged", loadVoices) }catch{} }
-// 瀏覽器不提供聲音的性別，只能從常見聲音名稱判斷（iPhone、Android、Windows 常見名稱）
-const MALE_VOICES = /otoya|hattori|ichiro|keita|daichi|naoki|minsu|jian|injoon|hyunsu|bongjin|gookmin|li-?mu|han\b|yunjian|yunxi|yunyang|kangkang|zhiwei|yunjhe|male|男/i;
-const FEMALE_VOICES = /kyoko|o-?ren|nanami|haruka|ayumi|sayaka|mizuki|yuna|sora|sunhi|heami|seoyeon|jimin|meijia|mei-?jia|tingting|ting-?ting|sinji|yu-?shu|hanhan|yating|hsiaochen|hsiaoyu|xiaoxiao|xiaoyi|huihui|美佳|京子|female|女/i;
-function voiceGender(v){ const n=v.name||""; return FEMALE_VOICES.test(n)?"female":MALE_VOICES.test(n)?"male":"" } // 先判女聲（"female" 字串含 "male"）
-function pickVoice(lang, gender){
+function pickVoice(lang){
   if(!voices.length) loadVoices();
   const norm = v => (v.lang||"").toLowerCase().replace("_","-");
   const l = lang.toLowerCase(), base = l.split("-")[0];
   const same = voices.filter(v => norm(v) === l);
   const near = voices.filter(v => norm(v).startsWith(base));
   const pool = same.length ? same : near;
-  if(gender){
-    const g = pool.filter(v => voiceGender(v)===gender);
-    if(g.length) return {voice:g.find(v=>v.localService)||g[0], exact:true};
-  }
-  const v = pool.find(v => v.localService) || pool[0] || null;
-  return v ? {voice:v, exact:!gender || voiceGender(v)===gender} : null;
+  return pool.find(v => v.localService) || pool[0] || null;
 }
 const LANG_NAME = {"ja-JP":"日文","ko-KR":"韓文","zh-TW":"中文"};
 function missingVoice(lang){
   if(missingVoice[lang]) return; missingVoice[lang] = true;
   toast("這支手機沒有"+(LANG_NAME[lang]||"這個語言")+"朗讀聲音。iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音，下載"+(LANG_NAME[lang]||"")+"聲音");
 }
-function speak(text,lang,gender){
+function speak(text,lang){ // 第三個參數（性別）已不使用
   if(!canSpeak||!text) return;
   try{
     const u=new SpeechSynthesisUtterance(text); u.lang=lang; u.rate=.95;
-    const r=pickVoice(lang,gender);
-    if(r){
-      u.voice=r.voice;
-      // 手機裡沒有該性別的聲音時，用音調高低模擬
-      if(!r.exact && gender) u.pitch = gender==="male" ? 0.75 : 1.2;
-    } else missingVoice(lang);
+    const v=pickVoice(lang); if(v) u.voice=v; else missingVoice(lang);
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch{}
-}
-function voiceName(lang,gender){
-  const r=pickVoice(lang,gender);
-  if(!r) return "沒有聲音";
-  return r.voice.name + (r.exact ? "" : "（手機裡沒有"+(gender==="male"?"男":"女")+"聲，改用音調模擬）");
 }
 
 // ---------- 國家、畫面 ----------
@@ -705,17 +673,8 @@ $("goSet").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); $("sett
 // ---------- 設定 ----------
 function renderGender(){
   document.querySelectorAll("#myGSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===myGender));
-  document.querySelectorAll("#themGSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===themGender));
-  const c=C[country];
-  $("voiceInfo").textContent = canSpeak
-    ? "目前使用：我的聲音（"+c.lang+"）"+voiceName(c.sr,myGender)+"；對方的聲音（中文）"+voiceName("zh-TW",themGender)
-    : "這個瀏覽器不支援朗讀。";
 }
 document.querySelectorAll("#myGSeg button").forEach(b=>b.onclick=()=>{myGender=b.dataset.g;store.set("myGender",myGender);renderGender()});
-document.querySelectorAll("#themGSeg button").forEach(b=>b.onclick=()=>{themGender=b.dataset.g;store.set("themGender",themGender);renderGender()});
-$("tryMy").onclick=()=>{ const c=C[country]; speak(country==="ja"?"すみません、これをお願いします。":"저기요, 이거 주세요.", c.sr, myGender) };
-$("tryThem").onclick=()=>speak("您好，請問需要什麼呢？","zh-TW",themGender);
-if(canSpeak){ try{ speechSynthesis.addEventListener("voiceschanged", ()=>{ if($("voiceInfo")) renderGender() }) }catch{} }
 function renderSettings(){
   $("key").value=apiKey;
   document.querySelectorAll("#modelSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===model));
