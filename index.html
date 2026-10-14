@@ -115,9 +115,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .round{width:52px;height:52px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 12%,transparent)}
 .round svg{width:22px;height:22px}
 .round[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-.quick{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0;-webkit-overflow-scrolling:touch}
-.quick::-webkit-scrollbar{display:none}
-.quick button{flex:none;font:inherit;font-size:14px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .bubble .back-tr{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
 .compose{display:flex;gap:8px}
 .compose input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--ink)}
@@ -161,7 +158,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
     <div class="log" id="logMe"></div>
     <div class="bubble live" id="liveMe"><button type="button" class="lang" id="menuBtn" aria-haspopup="dialog"><span id="menuLbl">中文 → 日文・有禮貌</span><svg><use href="#i-chev"/></svg></button><p class="t" id="liveMeT">點一下麥克風來說話</p></div>
     <p class="status" id="fStatus"></p>
-    <div class="quick" id="quick" role="group" aria-label="快速句"></div>
     <div class="compose" id="compose" hidden>
       <input type="text" id="src" placeholder="打字（中文、外文都可以）" enterkeyhint="send">
       <button type="button" class="btn" id="go">送出</button>
@@ -677,7 +673,7 @@ function setCountry(c){
   $("sub").textContent="中文 ⇄ "+C[c].lang;
   $("themLang").textContent=C[c].native;
   msgs=store.get("conv_"+c,[]);
-  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender(); renderQuick();
+  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender();
 }
 function updateMenuLbl(){
   $("menuLbl").textContent="中文 → "+C[country].lang+"・"+TONES[tone].label;
@@ -767,31 +763,6 @@ function renderSOS(){
 }
 function openOverlay(big,small){$("ovBig").textContent=big;$("ovSmall").textContent=small||"";$("ov").hidden=false}
 $("ov").onclick=()=>$("ov").hidden=true;
-
-// ---------- 一鍵快速句（固定翻譯，不用 AI、不花錢） ----------
-// [中文, 日文, 日文拼音, 韓文, 韓文拼音]
-const QUICK = [
-  ["請再說一次","もう一度お願いします。","mō ichido onegai shimasu","다시 한 번 말씀해 주세요.","dasi han beon malsseumhae juseyo"],
-  ["請說慢一點","ゆっくり話していただけますか。","yukkuri hanashite itadakemasu ka","천천히 말씀해 주시겠어요?","cheoncheonhi malsseumhae jusigesseoyo"],
-  ["我聽不懂","すみません、わかりません。","sumimasen, wakarimasen","죄송해요, 잘 모르겠어요.","joesonghaeyo, jal moreugesseoyo"],
-  ["請寫下來","書いていただけますか。","kaite itadakemasu ka","적어 주시겠어요?","jeogeo jusigesseoyo"],
-  ["好的","はい、わかりました。","hai, wakarimashita","네, 알겠어요.","ne, algesseoyo"],
-  ["謝謝","ありがとうございます。","arigatō gozaimasu","감사합니다.","gamsahamnida"]
-];
-function renderQuick(){
-  const box=$("quick"); box.replaceChildren();
-  const ja=country==="ja";
-  QUICK.forEach(q=>{
-    const b=el("button",null,q[0]); b.type="button";
-    b.onclick=()=>{
-      unlockSpeech(); keepAwake();
-      const fx=ja?q[1]:q[3];
-      pushMsg({who:"me",zh:q[0],fx,reading:ja?q[2]:q[4],back:"",tip:""});
-      speak(fx,C[country].sr,myGender);
-    };
-    box.append(b);
-  });
-}
 
 // ---------- 螢幕常亮（面對面翻譯時不要自動變暗） ----------
 let wakeLock=null;
