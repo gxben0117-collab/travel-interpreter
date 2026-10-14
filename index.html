@@ -226,18 +226,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <p class="hint">只存在這支手機的瀏覽器裡，不會上傳到別的地方。到 platform.claude.com → API Keys 建立。</p>
     </div>
     <div class="field">
-      <label>翻譯模型</label>
-      <div class="seg" role="group" aria-label="翻譯模型" id="modelSeg">
-        <button type="button" data-m="claude-haiku-5-5" aria-pressed="true">快速（Haiku）</button>
-        <button type="button" data-m="claude-sonnet-5-5" aria-pressed="false" id="sonnetBtn">細膩（Sonnet）</button>
-      </div>
-      <div class="compose" id="unlockBox" hidden>
-        <input type="password" id="unlockPw" inputmode="numeric" placeholder="輸入開放密碼" autocomplete="off">
-        <button type="button" class="btn" id="unlockGo">解鎖</button>
-      </div>
-      <p class="hint">快速版約 1 秒、翻 1000 句約台幣 5 元；細膩版慢一點、約台幣 100 元。</p>
-    </div>
-    <div class="field">
       <label>API 餘額</label>
       <div class="links"><a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">儲值／查看餘額</a><a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener">開啟主控台</a></div>
       <p class="hint">建議在 Billing 頁打開「Auto-reload（自動儲值）」：餘額低於設定金額時會自動從信用卡加值，人在國外也不會用到一半斷掉。</p>
@@ -343,11 +331,7 @@ const store = {
 };
 let country = store.get("country","ja"); if(!C[country]) country="ja";
 let apiKey = store.get("apiKey","");
-const SONNET = "claude-sonnet-5-5";
-const UNLOCK_HASH = "0978243e4aa32d1fd946ee304694ecffeda1c0d66a41502687eb6f57c503aa31"; // 開放密碼的 SHA-256
-let sonnetOpen = store.get("sonnetOpen",false);
-let model = store.get("model","claude-haiku-5-5");
-if(model===SONNET && !sonnetOpen) model="claude-haiku-5-5"; // 細膩版上鎖，未解鎖一律用快速版
+const model = "claude-haiku-5-5"; // 固定用快速版
 let autoSpeak = store.get("autoSpeak",true);
 // 翻譯語氣：只影響「翻成外文」的說法；對方的話翻回中文時，有禮貌用友善語氣，正常保留對方原本語氣
 const TONES = {
@@ -660,8 +644,6 @@ $("goSet").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); $("sett
 // ---------- 設定 ----------
 function renderSettings(){
   $("key").value=apiKey;
-  document.querySelectorAll("#modelSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===model));
-  $("sonnetBtn").textContent = sonnetOpen ? "細膩（Sonnet）" : "細膩（Sonnet）已上鎖";
   $("autoSpeak").checked=autoSpeak;
   renderTone();
 }
@@ -678,23 +660,6 @@ function renderTone(){
   });
   updateMenuLbl();
 }
-document.querySelectorAll("#modelSeg button").forEach(b=>b.onclick=()=>{
-  if(b.dataset.m===SONNET && !sonnetOpen){ $("unlockBox").hidden=false; $("unlockPw").focus(); return }
-  model=b.dataset.m; store.set("model",model); renderSettings();
-});
-async function sha256(t){
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));
-  return [...new Uint8Array(buf)].map(x=>x.toString(16).padStart(2,"0")).join("");
-}
-$("unlockGo").onclick=async()=>{
-  let ok=false; try{ ok = await sha256($("unlockPw").value.trim())===UNLOCK_HASH }catch{}
-  $("unlockPw").value="";
-  if(!ok){ toast("密碼不對"); return }
-  sonnetOpen=true; store.set("sonnetOpen",true);
-  model=SONNET; store.set("model",model);
-  $("unlockBox").hidden=true; renderSettings(); toast("已解鎖細膩（Sonnet）");
-};
-$("unlockPw").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("unlockGo").click() } });
 $("autoSpeak").onchange=e=>{autoSpeak=e.target.checked;store.set("autoSpeak",autoSpeak)};
 function readKey(){apiKey=$("key").value.trim();store.set("apiKey",apiKey)}
 $("saveKey").onclick=()=>{readKey(); if(!apiKey){note($("keyStatus"),"請先貼上金鑰",true);$("keyStatus").hidden=false;return} openF2F(true); fStatus("")};
