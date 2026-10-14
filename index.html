@@ -115,7 +115,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .round{width:52px;height:52px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 12%,transparent)}
 .round svg{width:22px;height:22px}
 .round[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-.bubble .back-tr{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
 .compose{display:flex;gap:8px}
 .compose input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--ink)}
 .compose .btn{padding:8px 14px;font-size:15px;border-radius:22px}
@@ -448,10 +447,10 @@ function errCopy(e){
 }
 
 const TR_SCHEMA = {type:"object",additionalProperties:false,
-  required:["from","text","reading","back","tip"],
+  required:["from","text","tip"],
   properties:{
     from:{type:"string",enum:["zh","ja","ko","other"]},
-    text:{type:"string"}, reading:{type:"string"}, back:{type:"string"}, tip:{type:"string"}
+    text:{type:"string"}, tip:{type:"string"}
   }};
 function contextLines(){
   return msgs.slice(0,4).reverse().map(m=>(m.who==="me"?"旅客：":"當地人：")+m.zh).join("\n");
@@ -489,8 +488,6 @@ function buildPrompt(text, who){
 正確是第一原則：意思必須完整、正確，不可漏譯、不可自行增加內容。數字、價格、數量、時間、日期、地名、人名、過敏原、身體狀況等資訊要完全照原文翻出；語音辨識結果明顯有誤又無法判斷時，照最可能的意思翻，並在 tip 用一句話提醒旅客再確認。
 ${toneRules(c)}${genderRule()}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
-reading：譯文是${c.lang}時填整句${c.reading}，否則空字串。
-back：譯文是${c.lang}時，把「譯文」忠實翻回台灣用語的繁體中文，讓旅客確認對方實際會聽到什麼意思（依譯文翻，不要照抄原文）；否則空字串。
 tip：只有真的有幫助時，用一句繁體中文提醒旅客禮節或對方可能的回答，否則空字串。
 ${ctx?"先前的對話（供理解上下文，不用翻譯）：\n"+ctx+"\n":""}
 原文：
@@ -507,7 +504,7 @@ async function translate(text, who){
     const out = String(r.text||"").trim(); if(!out) throw {code:"format"};
     const fromZh = who==="me" || (who!=="them" && r.from==="zh");
     const m = fromZh
-      ? {who:"me",zh:text,fx:out,reading:String(r.reading||""),back:String(r.back||""),tip:String(r.tip||"")}
+      ? {who:"me",zh:text,fx:out,tip:String(r.tip||"")}
       : {who:"them",fx:text,zh:out,tip:String(r.tip||"")};
     pushMsg(m);
     fStatus("");
@@ -584,7 +581,6 @@ function bubbleRow(side, texts, play){
   b.append(el("p","t",texts.t));
   if(texts.sub) b.append(el("span","sub",texts.sub));
   if(texts.rd) b.append(el("span","rd",texts.rd));
-  if(texts.back) b.append(el("span","back-tr","意思："+texts.back));
   if(texts.tip) b.append(el("span","tip",texts.tip));
   row.append(b);
   if(play){
@@ -602,7 +598,7 @@ function renderConv(){
   }else{
     msgs.slice(0,12).reverse().forEach(m=>{
       if(m.who==="me"){
-        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,back:m.back,tip:m.tip}));
+        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,tip:m.tip}));
         them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr,myGender)));
       }else{
         me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW",themGender)));
