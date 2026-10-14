@@ -244,14 +244,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <p class="hint" id="toneHint"></p>
     </div>
     <div class="field">
-      <label>我的性別</label>
-      <div class="seg" role="group" aria-label="我的性別" id="myGSeg" style="align-self:flex-start">
-        <button type="button" data-g="male" aria-pressed="false">男</button>
-        <button type="button" data-g="female" aria-pressed="false">女</button>
-      </div>
-      <p class="hint">翻成日文時，自稱和語氣會符合性別。</p>
-    </div>
-    <div class="field">
       <label>介面顏色</label>
       <div class="skins" role="group" aria-label="介面顏色" id="skinSeg"></div>
     </div>
@@ -363,8 +355,6 @@ const SKINS = { // 名稱、色票（背景、主色）、手機狀態列顏色
   pink:{label:"淺粉紅",dot:"linear-gradient(135deg,#fdedf3 50%,#c23f73 50%)",bar:"#fdedf3"},
   gold:{label:"豪華金",dot:"linear-gradient(135deg,#120f09 50%,#d4af37 50%)",bar:"#120f09"}
 };
-let myGender = store.get("myGender",""); // "" 代表還沒選
-let themGender = store.get("themGender","female");
 let skin = store.get("skin","white"); if(!SKINS[skin]) skin="white";
 function applySkin(k){
   skin=k; store.set("skin",k); document.body.dataset.skin=k;
@@ -454,17 +444,6 @@ function toneRules(c){
 - 不用平輩口語、不用命令形，也不要翻出粗魯或失禮的字眼；原文有不禮貌的字，用委婉的說法表達同樣的意思。
 - 翻成中文時，也用客氣、友善的語氣。`;
 }
-function genderRule(){
-  if(!myGender) return "";
-  const g = myGender==="male" ? "男性" : "女性";
-  if(country==="ja"){
-    const self = tone==="polite"
-      ? "需要自稱時用「私」（禮貌場合男女通用）"
-      : (myGender==="male" ? "需要自稱時用「僕」" : "需要自稱時用「私」");
-    return `\n旅客是${g}：翻成日文時，${self}，句尾和語氣自然符合${g}的說話方式；原文沒有提到自己時不要硬加主詞。`;
-  }
-  return `\n旅客是${g}：翻成韓文時語氣自然符合${g}的說話方式，但不要因此改變意思或禮貌程度。`;
-}
 function buildPrompt(text, who){
   const c=C[country];
   const target = tone==="polite" ? c.style : c.lang;
@@ -476,7 +455,7 @@ function buildPrompt(text, who){
   const ctx = contextLines();
   return `你是台灣旅客在${c.name}和當地人面對面溝通的口譯。${rule}
 正確是第一原則：意思必須完整、正確，不可漏譯、不可自行增加內容。數字、價格、數量、時間、日期、地名、人名、過敏原、身體狀況等資訊要完全照原文翻出；語音辨識結果明顯有誤又無法判斷時，照最可能的意思翻，並在 tip 用一句話提醒旅客再確認。
-${toneRules(c)}${genderRule()}
+${toneRules(c)}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
 tip：只有真的有幫助時，用一句繁體中文提醒旅客禮節或對方可能的回答，否則空字串。
 ${ctx?"先前的對話（供理解上下文，不用翻譯）：\n"+ctx+"\n":""}
@@ -498,7 +477,7 @@ async function translate(text, who){
       : {who:"them",fx:text,zh:out,tip:String(r.tip||"")};
     pushMsg(m);
     fStatus("");
-    if(autoSpeak){ if(fromZh) speak(m.fx,C[country].sr,myGender); else speak(m.zh,"zh-TW",themGender) }
+    if(autoSpeak){ if(fromZh) speak(m.fx,C[country].sr); else speak(m.zh,"zh-TW") }
   }catch(e){ fStatus(errCopy(e),true); if(e&&e.code==="credit") $("fStatus").append(payLink()); renderConv() }
   finally{ busy=false; $("go").disabled=false }
 }
@@ -589,11 +568,11 @@ function renderConv(){
   const c=C[country], them=$("logThem"), me=$("logMe"), zh="zh-TW", fx=c.sr;
   them.replaceChildren(); me.replaceChildren();
   if(!msgs.length){
-    them.append(bubbleRow("l",{t:c.intro},{t:[c.intro,fx,myGender]},()=>speak(c.intro,fx,myGender)));
+    them.append(bubbleRow("l",{t:c.intro},{t:[c.intro,fx]},()=>speak(c.intro,fx)));
     me.append(el("p","note-empty","手機平放在你們中間，上半部是給對方看的。你按下面的麥克風說中文，對方按上面的麥克風說"+c.lang+"。點任何一句話就會念出來。"));
   }else{
     msgs.slice(0,12).reverse().forEach(m=>{
-      const g = m.who==="me" ? myGender : themGender;
+      const g = undefined;
       if(m.who==="me"){
         me.append(bubbleRow("r",{t:m.zh,sub:m.fx,tip:m.tip},{t:[m.zh,zh,g],sub:[m.fx,fx,g]}));
         them.append(bubbleRow("l",{t:m.fx,sub:m.zh},{t:[m.fx,fx,g],sub:[m.zh,zh,g]},()=>speak(m.fx,fx,g)));
@@ -630,7 +609,7 @@ function missingVoice(lang){
   if(missingVoice[lang]) return; missingVoice[lang] = true;
   toast("這支手機沒有"+(LANG_NAME[lang]||"這個語言")+"朗讀聲音。iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音，下載"+(LANG_NAME[lang]||"")+"聲音");
 }
-function speak(text,lang){ // 第三個參數（性別）已不使用
+function speak(text,lang){
   if(!canSpeak||!text) return;
   try{
     const u=new SpeechSynthesisUtterance(text); u.lang=lang; u.rate=.95;
@@ -647,7 +626,7 @@ function setCountry(c){
   $("sub").textContent="中文 ⇄ "+C[c].lang;
   $("themLang").textContent=C[c].native;
   msgs=store.get("conv_"+c,[]);
-  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender();
+  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
 }
 function updateMenuLbl(){
   $("menuLbl").textContent="中文 → "+C[country].lang+"・"+TONES[tone].label;
@@ -671,16 +650,11 @@ $("goPhr").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); window.
 $("goSet").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); $("settings").scrollIntoView() };
 
 // ---------- 設定 ----------
-function renderGender(){
-  document.querySelectorAll("#myGSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===myGender));
-}
-document.querySelectorAll("#myGSeg button").forEach(b=>b.onclick=()=>{myGender=b.dataset.g;store.set("myGender",myGender);renderGender()});
 function renderSettings(){
   $("key").value=apiKey;
   document.querySelectorAll("#modelSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===model));
   $("autoSpeak").checked=autoSpeak;
   renderTone();
-  renderGender();
 }
 function setTone(t){ tone=t; store.set("tone",t); renderTone() }
 function renderTone(){
@@ -718,7 +692,7 @@ function renderPhrases(){
     const fx=ja?p[1]:p[3], rd=ja?p[2]:p[4];
     const b=el("button","item");b.type="button";
     b.append(el("span","zh",p[0]),el("span","fx",fx),el("span","note",rd));
-    b.onclick=()=>{openOverlay(fx,p[0]);speak(fx,C[country].sr,myGender)};
+    b.onclick=()=>{openOverlay(fx,p[0]);speak(fx,C[country].sr)};
     list.append(b);
   });
 }
