@@ -84,6 +84,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .row-l .bubble{max-width:calc(100% - 46px)}
 .bubble .t{font-family:var(--font-big);font-size:clamp(20px,5.8vw,28px);font-weight:700;line-height:1.35;word-break:break-word;margin:0}
 .bubble.tr .t{color:var(--accent)}
+.bubble.tr .sub{color:var(--muted);font-weight:400}
 .bubble .sub{font-size:15px;color:var(--accent);font-family:var(--font-big);font-weight:700;word-break:break-word}
 .bubble .rd{font-family:var(--font-mono);font-size:13px;color:var(--muted);word-break:break-word}
 .bubble .tip{font-size:13px;color:var(--muted);line-height:1.5}
@@ -531,10 +532,10 @@ function renderConv(){
     msgs.slice(0,12).reverse().forEach(m=>{
       if(m.who==="me"){
         me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,tip:m.tip}));
-        them.append(bubbleRow("l",{t:m.fx},()=>speak(m.fx,c.sr)));
+        them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr)));
       }else{
-        me.append(bubbleRow("l",{t:m.zh,tip:m.tip},()=>speak(m.zh,"zh-TW")));
-        them.append(bubbleRow("r",{t:m.fx}));
+        me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW")));
+        them.append(bubbleRow("r",{t:m.fx,sub:m.zh}));
       }
     });
   }
