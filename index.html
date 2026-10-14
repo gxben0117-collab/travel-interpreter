@@ -35,7 +35,7 @@ h1 small{display:block;font-size:12px;color:var(--muted);font-weight:400}
 .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px}
 .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:15px;padding:7px 14px;border-radius:999px;cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:700}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);border-bottom:1px solid var(--line)}
 .tabs button{border:0;background:none;font:inherit;color:var(--muted);padding:10px 4px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:700}
 button:focus-visible,textarea:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
@@ -60,9 +60,6 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chips button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:6px 12px;border-radius:999px;cursor:pointer}
 .chips button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:700}
-.photo{position:relative;display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:14px;padding:22px 12px;background:var(--surface);cursor:pointer;font-weight:700;color:var(--accent);text-align:center}
-.photo input{position:absolute;width:1px;height:1px;opacity:0}
-.preview{max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;align-self:center}
 .sos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sos div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .sos b{display:block;font-size:22px;font-variant-numeric:tabular-nums;color:var(--accent)}
@@ -143,7 +140,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
         <button type="button" data-c="ko" aria-pressed="false">韓國</button>
       </div>
       <button type="button" class="btn" id="reset">清空</button>
-      <button type="button" class="btn" id="more">拍照・常用句・設定</button>
+      <button type="button" class="btn" id="more">常用句・設定</button>
     </div>
   </div>
 </section>
@@ -159,27 +156,11 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 
   <nav class="tabs" role="tablist">
     <button type="button" role="tab" data-tab="t" aria-selected="false">面對面翻譯</button>
-    <button type="button" role="tab" data-tab="p" aria-selected="true">拍照翻譯</button>
-    <button type="button" role="tab" data-tab="q" aria-selected="false">常用句</button>
+    <button type="button" role="tab" data-tab="q" aria-selected="true">常用句</button>
   </nav>
 
-  <!-- 拍照 -->
-  <section class="panel" id="tab-p">
-    <label class="photo">
-      <input type="file" id="pic" accept="image/*">
-      <span>拍菜單、告示或商品標籤<br><span class="hint">也可以從相簿選照片</span></span>
-    </label>
-    <img id="prev" class="preview" alt="剛選的照片" hidden>
-    <div id="pStatus" class="notice" hidden></div>
-    <div id="pOut" class="panel" hidden>
-      <article class="card"><div class="dir"><span class="tag" id="pKind"></span></div><p class="back" id="pSum"></p></article>
-      <p class="hint">點一項，會顯示「我要這個」給店員看。</p>
-      <div class="list" id="pList"></div>
-    </div>
-  </section>
-
   <!-- 常用句 -->
-  <section class="panel" id="tab-q" hidden>
+  <section class="panel" id="tab-q">
     <div class="chips" id="cats"></div>
     <p class="hint">點一句就會放大給對方看並念出來，不用網路也能用。</p>
     <div class="list" id="phr"></div>
@@ -220,6 +201,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
     <div class="dir"><span class="tag">使用提醒</span></div>
     <p class="back">iPhone 請用 Safari 開，Android 請用 Chrome 開。第一次按麥克風時，瀏覽器會問能不能使用麥克風，請按「允許」。</p>
     <p class="hint">語音辨識和翻譯都需要網路；常用句不用網路。</p>
+    <p class="hint">拍照翻譯菜單、告示：請用 Google 翻譯 App 的相機功能。</p>
   </article>
 </div>
 
@@ -349,7 +331,7 @@ async function callClaude(content, schema, maxTokens){
 }
 function errCopy(e){
   return ({
-    nokey:"還沒設定 API 金鑰，按「拍照・常用句・設定」到最下面設定。",
+    nokey:"還沒設定 API 金鑰，按「常用句・設定」到最下面設定。",
     badkey:"API 金鑰錯誤或已停用，請到設定重新貼上。",
     credit:"API 餘額用完了，按右邊按鈕用手機儲值。",
     rate:"翻譯太密集了，等幾秒再試。",
@@ -539,10 +521,10 @@ document.querySelectorAll(".seg button[data-c]").forEach(b=>b.onclick=()=>setCou
 function openF2F(on){ $("f2f").hidden=!on; $("main").hidden=on; document.body.classList.toggle("f2f-on",on) }
 function showTab(k){
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===k));
-  ["p","q"].forEach(t=>$("tab-"+t).hidden=t!==k);
+  $("tab-q").hidden=k!=="q";
 }
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="t"){openF2F(true);return} showTab(b.dataset.tab) });
-$("more").onclick=()=>{ if(rec) rec.stop(); openF2F(false); showTab("p"); window.scrollTo(0,0) };
+$("more").onclick=()=>{ if(rec) rec.stop(); openF2F(false); showTab("q"); window.scrollTo(0,0) };
 
 // ---------- 設定 ----------
 function renderSettings(){
@@ -584,59 +566,11 @@ function renderSOS(){
 function openOverlay(big,small){$("ovBig").textContent=big;$("ovSmall").textContent=small||"";$("ov").hidden=false}
 $("ov").onclick=()=>$("ov").hidden=true;
 
-// ---------- 拍照翻譯 ----------
-function shrink(file){ // 縮到長邊 1600px 的 JPEG，省流量也省費用
-  return new Promise((ok,bad)=>{
-    const img=new Image(), url=URL.createObjectURL(file);
-    img.onload=()=>{
-      const s=Math.min(1,1600/Math.max(img.width,img.height));
-      const cv=document.createElement("canvas");cv.width=Math.round(img.width*s);cv.height=Math.round(img.height*s);
-      cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
-      URL.revokeObjectURL(url);
-      ok(cv.toDataURL("image/jpeg",.85).split(",")[1]);
-    };
-    img.onerror=()=>bad({code:"other",message:"照片讀取失敗"});
-    img.src=url;
-  });
-}
-const PHOTO_SCHEMA={type:"object",additionalProperties:false,required:["kind","summary","items"],
-  properties:{kind:{type:"string"},summary:{type:"string"},
-    items:{type:"array",items:{type:"object",additionalProperties:false,required:["original","zh","note"],
-      properties:{original:{type:"string"},zh:{type:"string"},note:{type:"string"}}}}}};
-$("pic").onchange=async e=>{
-  const f=e.target.files&&e.target.files[0]; if(!f)return;
-  $("prev").src=URL.createObjectURL(f);$("prev").hidden=false;$("pOut").hidden=true;
-  const st=$("pStatus"); st.hidden=false; st.classList.remove("err");
-  st.replaceChildren(el("span","spin"),document.createTextNode(" 讀取照片中，約 5～20 秒…"));
-  const c=C[country];
-  try{
-    const b64=await shrink(f);
-    const r=await callClaude([
-      {type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},
-      {type:"text",text:`這是台灣旅客在${c.name}拍的照片，可能是菜單、告示、商品標籤或票券。用台灣用語的繁體中文說明。
-kind：菜單、告示、商品或其他。summary：一兩句話說明這是什麼、旅客該注意什麼。
-items：依照片上的順序列出文字項目，最多 30 項；original 是照片上的原文，zh 是中文翻譯，note 是簡短補充（主要食材、價格、辣度、常見過敏原如蝦蛋花生小麥、使用規則），沒有就空字串。看不清楚的字不要猜。`}
-    ], PHOTO_SCHEMA, 6000);
-    $("pKind").textContent=r.kind||"照片";$("pSum").textContent=r.summary||"";
-    const list=$("pList");list.replaceChildren();
-    (r.items||[]).forEach(it=>{
-      const b=el("button","item");b.type="button";
-      b.append(el("span","zh",it.zh),el("span","fx",it.original));
-      if(it.note)b.append(el("span","note",it.note));
-      b.onclick=()=>{openOverlay(it.original+"\n"+c.want,"我要這個："+it.zh);speak(c.want,c.sr)};
-      list.append(b);
-    });
-    list.hidden=!list.children.length;
-    $("pOut").hidden=false; note(st,"");
-  }catch(err){note(st,errCopy(err),true); if(err&&err.code==="credit") st.append(payLink())}
-  finally{e.target.value=""}
-};
-
 // ---------- 啟動 ----------
 setCountry(country);
 renderSettings();
 if(apiKey){ openF2F(true) }
-else { openF2F(false); showTab("p"); $("settings").scrollIntoView(); note($("keyStatus"),"第一次使用：先貼上 API 金鑰，再按「儲存並開始」。") ; $("keyStatus").hidden=false }
+else { openF2F(false); showTab("q"); $("settings").scrollIntoView(); note($("keyStatus"),"第一次使用：先貼上 API 金鑰，再按「儲存並開始」。") ; $("keyStatus").hidden=false }
 if(!SR){ fStatus("這個瀏覽器不支援語音輸入，可以用打字。iPhone 請用 Safari，Android 請用 Chrome。",true) }
 </script>
 </body>
