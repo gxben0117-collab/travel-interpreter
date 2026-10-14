@@ -70,43 +70,50 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .check{display:flex;gap:8px;align-items:center;font-size:15px}
 .check input{width:20px;height:20px;accent-color:var(--accent)}
 
-/* 面對面模式 */
-.f2f{position:fixed;inset:0;z-index:5;background:var(--bg);display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1.25fr);grid-template-columns:minmax(0,1fr)}
-.pane{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0;padding:12px 16px}
-.them{transform:rotate(180deg);background:color-mix(in srgb,var(--accent) 9%,var(--surface));padding-bottom:calc(12px + env(safe-area-inset-top,0px))}
-.me{border-top:3px solid var(--accent);padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
-.who-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;letter-spacing:.06em;color:var(--muted)}
-.who-bar b{color:var(--accent)}
-.log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
-.msg{width:100%;display:flex;flex-direction:column;gap:2px;background:none;border:0;padding:0;text-align:left;color:var(--ink);font:inherit;cursor:pointer}
-.msg .lbl{font-size:12px;color:var(--muted);letter-spacing:.04em}
-.msg .t{font-family:var(--font-big);font-size:17px;line-height:1.4;word-break:break-word;color:var(--muted)}
-.msg .sub{font-size:13px;color:var(--muted);word-break:break-word;font-family:var(--font-big)}
-.msg .rd{font-family:var(--font-mono);font-size:13px;color:var(--muted);word-break:break-word}
-.msg:first-child .t{font-size:clamp(24px,7.2vw,38px);font-weight:700;color:var(--ink)}
-.msg:first-child .sub{font-size:15px;color:var(--accent);font-weight:700}
-.msg.live .t{color:var(--accent);font-weight:700}
-.msg .tip{font-size:13px;color:var(--muted);border-left:2px solid var(--line);padding-left:8px;margin-top:4px}
-.mic{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;border-radius:16px;border:0;background:var(--accent);color:var(--on-accent);font:inherit;font-size:19px;font-weight:700;cursor:pointer;touch-action:manipulation}
-.mic svg{width:24px;height:24px;flex:none}
+/* 面對面模式：參考 iPhone 翻譯 App 的面對面畫面，對話氣泡＋圓形麥克風 */
+.f2f{position:fixed;inset:0;z-index:5;background:var(--bg);display:grid;grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);grid-template-columns:minmax(0,1fr)}
+.pane{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0;padding:12px 16px}
+.them{transform:rotate(180deg);padding-bottom:calc(12px + env(safe-area-inset-top,0px))}
+.me{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+.divider{height:1px;background:var(--line);margin:0 16px}
+.log{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:2px}
+.log>:first-child{margin-top:auto}
+.row-l{display:flex;align-items:center;gap:10px;align-self:flex-start;max-width:100%;min-width:0}
+.row-r{display:flex;align-self:flex-end;max-width:100%;min-width:0}
+.bubble{min-width:0;max-width:100%;background:var(--surface);border-radius:22px;padding:12px 16px;display:flex;flex-direction:column;gap:4px;box-shadow:0 1px 2px color-mix(in srgb,var(--ink) 7%,transparent)}
+.row-l .bubble{max-width:calc(100% - 46px)}
+.bubble .t{font-family:var(--font-big);font-size:clamp(20px,5.8vw,28px);font-weight:700;line-height:1.35;word-break:break-word;margin:0}
+.bubble.tr .t{color:var(--accent)}
+.bubble .sub{font-size:15px;color:var(--accent);font-family:var(--font-big);font-weight:700;word-break:break-word}
+.bubble .rd{font-family:var(--font-mono);font-size:13px;color:var(--muted);word-break:break-word}
+.bubble .tip{font-size:13px;color:var(--muted);line-height:1.5}
+.note-empty{font-size:14px;color:var(--muted);text-align:center;margin:auto 8px 0}
+.play{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;cursor:pointer}
+.play svg{width:14px;height:14px}
+.live{align-self:flex-end;width:min(100%,360px)}
+.live .lang{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;border:0;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer}
+.live .lang svg{width:14px;height:14px;color:var(--muted)}
+.live .t{color:var(--muted);opacity:.55}
+.live.on .t{color:var(--ink);opacity:1}
+.ctrl{display:grid;grid-template-columns:56px 1fr 56px;align-items:center;justify-items:center}
+.mic{grid-column:2;width:74px;height:74px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;cursor:pointer;touch-action:manipulation;box-shadow:0 4px 14px color-mix(in srgb,var(--accent) 35%,transparent)}
+.mic svg{width:32px;height:32px}
 .mic.on{background:var(--rec);animation:pulse 1.2s ease-in-out infinite}
-.mic:disabled{opacity:.5}
-@keyframes pulse{50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--rec) 25%,transparent)}}
+@keyframes pulse{50%{box-shadow:0 0 0 12px color-mix(in srgb,var(--rec) 22%,transparent)}}
+.round{width:52px;height:52px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 12%,transparent)}
+.round svg{width:22px;height:22px}
+.round[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .compose{display:flex;gap:8px}
-.compose input{flex:1;min-width:0;font:inherit;font-size:16px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
-.compose .btn{padding:8px 12px;font-size:14px}
-.tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.tools .btn{padding:6px 10px;font-size:14px}
-.tools .seg button{padding:5px 11px;font-size:14px}
-.menu-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;letter-spacing:0;padding:4px 10px;border-radius:999px;cursor:pointer}
-.menu-btn svg{width:16px;height:16px;flex:none}
+.compose input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--ink)}
+.compose .btn{padding:8px 14px;font-size:15px;border-radius:22px}
 .sheet-bg{position:fixed;inset:0;z-index:7;background:color-mix(in srgb,var(--ink) 35%,transparent)}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--surface);border-radius:18px 18px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;max-height:85%;overflow-y:auto;box-shadow:0 -6px 24px color-mix(in srgb,var(--ink) 18%,transparent)}
 .sheet-sec{display:flex;flex-direction:column;gap:8px}
 .sheet-lbl{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em}
 .sheet-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .sheet-actions .btn{padding:12px 6px}
-.status{font-size:14px;color:var(--muted);min-height:1.3em;margin:0}
+.status{font-size:14px;color:var(--muted);margin:0;text-align:center}
+.status:empty{display:none}
 .status.err{color:var(--warn)}
 .paylink{display:inline-block;margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:700;text-decoration:none;font-size:14px}
 .links{display:flex;gap:8px;flex-wrap:wrap}
@@ -124,23 +131,28 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 </head>
 <body data-country="ja">
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-mic" viewBox="0 0 24 24"><path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-mic" viewBox="0 0 24 24"><path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol><symbol id="i-kb" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3.5 6.5h17v11h-17zM7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8 14h8"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m8 9 4-4 4 4M8 15l4 4 4-4"/></symbol></svg>
 
 <!-- 面對面翻譯（預設畫面） -->
 <section class="f2f" id="f2f" aria-label="面對面翻譯">
   <div class="pane them">
-    <div class="who-bar"><b id="themTitle">相手の画面</b><span id="themHint"></span></div>
     <div class="log" id="logThem"></div>
-    <button type="button" class="mic" id="micThem"><svg><use href="#i-mic"/></svg><span id="micThemLbl">話す</span></button>
+    <div class="bubble live" id="liveThem"><span class="lang" id="themLang">日本語</span><p class="t" id="liveThemT"></p></div>
+    <div class="ctrl"><button type="button" class="mic" id="micThem" aria-label="話す"><svg><use href="#i-mic"/></svg></button></div>
   </div>
+  <div class="divider"></div>
   <div class="pane me">
-    <div class="who-bar"><b>我的畫面</b><button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog"><span id="menuLbl">日本・有禮貌</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
     <div class="log" id="logMe"></div>
+    <div class="bubble live" id="liveMe"><button type="button" class="lang" id="menuBtn" aria-haspopup="dialog"><span id="menuLbl">中文 → 日文・有禮貌</span><svg><use href="#i-chev"/></svg></button><p class="t" id="liveMeT">點一下麥克風來說話</p></div>
     <p class="status" id="fStatus"></p>
-    <button type="button" class="mic" id="micMe"><svg><use href="#i-mic"/></svg><span id="micMeLbl">按一下，說中文</span></button>
-    <div class="compose">
-      <input type="text" id="src" placeholder="或用打字（中文、外文都可以）" enterkeyhint="send">
+    <div class="compose" id="compose" hidden>
+      <input type="text" id="src" placeholder="打字（中文、外文都可以）" enterkeyhint="send">
       <button type="button" class="btn" id="go">送出</button>
+    </div>
+    <div class="ctrl">
+      <button type="button" class="round" id="moreBtn" aria-label="選單"><svg><use href="#i-dots"/></svg></button>
+      <button type="button" class="mic" id="micMe" aria-label="說中文"><svg><use href="#i-mic"/></svg></button>
+      <button type="button" class="round" id="kbBtn" aria-label="打字" aria-pressed="false"><svg><use href="#i-kb"/></svg></button>
     </div>
   </div>
 </section>
@@ -242,15 +254,15 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 <script>
 const C = {
   ja:{name:"日本",lang:"日文",sr:"ja-JP",style:"禮貌自然的日文（です・ます體）",reading:"羅馬拼音（Hepburn）",
-      themTitle:"相手の画面",themHint:"話した内容は日本語でここに表示されます",mic:"話す",micOn:"聞いています…もう一度押すと終了",
+      native:"日本語",tapHint:"マイクをタップして話してください",listening:"聞いています…",otherTalking:"相手が話しています…",mic:"話す",
       meLbl:"旅行者",themLbl:"あなた",
-      intro:"こんにちは。翻訳アプリでお話しさせてください。下のボタンを押して日本語で話してください。",
+      intro:"こんにちは。翻訳アプリでお話しさせてください。マイクのボタンを押して、日本語で話してください。",
       want:"これをお願いします。",
       sos:[["110","警察"],["119","救護車・消防"],["050-3816-2787","訪日外國人旅遊熱線（24小時，有中文）"],["#7119","不確定要不要叫救護車時諮詢（部分地區）"]]},
   ko:{name:"韓國",lang:"韓文",sr:"ko-KR",style:"禮貌自然的韓文（해요體）",reading:"羅馬拼音（韓國文化觀光部式）",
-      themTitle:"상대방 화면",themHint:"말씀하신 내용은 여기에 한국어로 나와요",mic:"말하기",micOn:"듣고 있어요… 다시 누르면 끝",
+      native:"한국어",tapHint:"마이크를 누르고 말씀해 주세요",listening:"듣고 있어요…",otherTalking:"상대방이 말하고 있어요…",mic:"말하기",
       meLbl:"여행자",themLbl:"나",
-      intro:"안녕하세요. 번역 앱으로 대화해도 될까요? 아래 버튼을 누르고 한국어로 말씀해 주세요.",
+      intro:"안녕하세요. 번역 앱으로 대화해도 될까요? 마이크 버튼을 누르고 한국어로 말씀해 주세요.",
       want:"이거 주세요.",
       sos:[["112","警察"],["119","救護車・消防"],["1330","韓國旅遊諮詢熱線（24小時，有中文）"],["1345","外國人綜合服務中心"]]}
 };
@@ -436,11 +448,15 @@ async function translate(text, who){
 // ---------- 語音辨識 ----------
 let rec=null, recWho=null;
 function setMicUI(){
-  const c=C[country];
   $("micMe").classList.toggle("on",recWho==="me");
   $("micThem").classList.toggle("on",recWho==="them");
-  $("micMeLbl").textContent = recWho==="me" ? "聽取中…再按一下結束" : "按一下，說中文";
-  $("micThemLbl").textContent = recWho==="them" ? c.micOn : c.mic;
+  $("micThem").setAttribute("aria-label",C[country].mic);
+  if(!recWho) resetLive();
+}
+function resetLive(){
+  const c=C[country];
+  $("liveMeT").textContent="點一下麥克風來說話"; $("liveMe").classList.remove("on");
+  $("liveThemT").textContent=c.tapHint; $("liveThem").classList.remove("on");
 }
 function unlockSpeech(){ // iOS 要在使用者點擊時先啟動一次朗讀，之後非同步朗讀才會有聲音
   if(!canSpeak||unlockSpeech.done) return;
@@ -470,7 +486,7 @@ function startListen(who){
     if(rec!==r) return;
     rec=null; recWho=null; setMicUI();
     const text=(finalText||interim).trim();
-    if(text) translate(text, who); else renderConv();
+    if(text){ showLive(who,text); translate(text, who) } else renderConv();
   };
   rec=r; recWho=who; setMicUI(); fStatus("");
   showLive(who,"");
@@ -480,43 +496,50 @@ $("micMe").onclick=()=>startListen("me");
 $("micThem").onclick=()=>startListen("them");
 
 function showLive(who,text){
-  renderConv();
   const c=C[country];
-  const box = who==="me" ? $("logMe") : $("logThem");
-  const m=el("div","msg live");
-  m.append(el("span","lbl", who==="me"?"我說（辨識中）":(country==="ja"?"あなた（認識中）":"나 (인식 중)")), el("span","t", text||"…"));
-  box.prepend(m);
-  const other = who==="me" ? $("logThem") : $("logMe");
-  const o=el("div","msg live");
-  o.append(el("span","lbl", who==="me"?(country==="ja"?"旅行者が話しています…":"여행자가 말하고 있어요…"):"對方正在說話…"));
-  other.prepend(o);
+  if(who==="me"){
+    $("liveMe").classList.add("on"); $("liveMeT").textContent=text||"聽取中…";
+    $("liveThemT").textContent=c.otherTalking;
+  }else{
+    $("liveThem").classList.add("on"); $("liveThemT").textContent=text||c.listening;
+    $("liveMeT").textContent="對方正在說話…";
+  }
 }
 
 // ---------- 對話顯示 ----------
+function bubbleRow(side, texts, play){
+  const row=el("div", side==="l"?"row-l":"row-r");
+  const b=el("div","bubble"+(side==="l"?" tr":""));
+  b.append(el("p","t",texts.t));
+  if(texts.sub) b.append(el("span","sub",texts.sub));
+  if(texts.rd) b.append(el("span","rd",texts.rd));
+  if(texts.tip) b.append(el("span","tip",texts.tip));
+  row.append(b);
+  if(play){
+    const btn=el("button","play"); btn.type="button"; btn.setAttribute("aria-label","播放");
+    btn.innerHTML='<svg><use href="#i-play"/></svg>'; btn.onclick=play; row.append(btn);
+  }
+  return row;
+}
 function renderConv(){
   const c=C[country], them=$("logThem"), me=$("logMe");
   them.replaceChildren(); me.replaceChildren();
   if(!msgs.length){
-    const a=el("div","msg");a.append(el("span","t",c.intro));them.append(a);
-    const b=el("div","msg");
-    b.append(el("span","t","手機平放在你們中間"),
-      el("span","sub","上半部是倒過來給對方看的。你按下面的麥克風說中文；對方按上面的「"+c.mic+"」說"+c.lang+"。講完會自動翻譯並念出來。"));
-    me.append(b);
-    return;
+    them.append(bubbleRow("l",{t:c.intro},()=>speak(c.intro,c.sr)));
+    me.append(el("p","note-empty","手機平放在你們中間，上半部是給對方看的。你按下面的麥克風說中文，對方按上面的麥克風說"+c.lang+"。"));
+  }else{
+    msgs.slice(0,12).reverse().forEach(m=>{
+      if(m.who==="me"){
+        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,tip:m.tip}));
+        them.append(bubbleRow("l",{t:m.fx},()=>speak(m.fx,c.sr)));
+      }else{
+        me.append(bubbleRow("l",{t:m.zh,tip:m.tip},()=>speak(m.zh,"zh-TW")));
+        them.append(bubbleRow("r",{t:m.fx}));
+      }
+    });
   }
-  msgs.slice(0,8).forEach(m=>{
-    const t=el("button","msg");t.type="button";
-    t.append(el("span","lbl",m.who==="me"?c.meLbl:c.themLbl), el("span","t",m.fx));
-    t.onclick=()=>speak(m.fx,c.sr);
-    them.append(t);
-    const s=el("button","msg");s.type="button";
-    s.append(el("span","lbl",m.who==="me"?"我說":"對方說"), el("span","t",m.zh));
-    if(m.who==="me"){ s.append(el("span","sub",m.fx)); if(m.reading) s.append(el("span","rd",m.reading)); }
-    if(m.tip) s.append(el("span","tip",m.tip));
-    s.onclick=()=>speak(m.fx,c.sr);
-    me.append(s);
-  });
-  them.scrollTop=0; me.scrollTop=0;
+  resetLive();
+  requestAnimationFrame(()=>{ them.scrollTop=them.scrollHeight; me.scrollTop=me.scrollHeight });
 }
 function pushMsg(m){msgs.unshift(m);msgs=msgs.slice(0,30);store.set("conv_"+country,msgs);renderConv()}
 $("reset").onclick=()=>{msgs=[];store.set("conv_"+country,[]);renderConv();fStatus("");openSheet(false);toast("對話已清空")};
@@ -557,14 +580,13 @@ function setCountry(c){
   document.body.dataset.country=c;
   document.querySelectorAll(".seg button[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));
   $("sub").textContent="中文 ⇄ "+C[c].lang;
-  $("themTitle").textContent=C[c].themTitle; $("themHint").textContent=C[c].themHint;
+  $("themLang").textContent=C[c].native;
   document.querySelector('meta[name="theme-color"]').content = c==="ja"?"#2c3b8f":"#0d7466";
   msgs=store.get("conv_"+c,[]);
   setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
 }
 function updateMenuLbl(){
-  $("menuLbl").textContent=C[country].name+"・"+TONES[tone].label;
-  $("menuBtn").dataset.tone=tone;
+  $("menuLbl").textContent="中文 → "+C[country].lang+"・"+TONES[tone].label;
 }
 function openSheet(on){ $("sheet").hidden=!on; $("sheetBg").hidden=!on }
 document.querySelectorAll(".seg button[data-c]").forEach(b=>b.onclick=()=>setCountry(b.dataset.c));
@@ -574,7 +596,11 @@ function showTab(k){
   $("tab-q").hidden=k!=="q";
 }
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="t"){openF2F(true);return} showTab(b.dataset.tab) });
-$("menuBtn").onclick=()=>{ if(rec) rec.stop(); openSheet(true) };
+$("menuBtn").onclick=$("moreBtn").onclick=()=>{ if(rec) rec.stop(); openSheet(true) };
+$("kbBtn").onclick=()=>{
+  const on=$("compose").hidden; $("compose").hidden=!on; $("kbBtn").setAttribute("aria-pressed",on);
+  if(on) $("src").focus();
+};
 $("sheetBg").onclick=()=>openSheet(false);
 $("sheetClose").onclick=()=>openSheet(false);
 $("goPhr").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); window.scrollTo(0,0) };
