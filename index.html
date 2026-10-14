@@ -98,6 +98,8 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tools .btn{padding:6px 10px;font-size:14px}
 .tools .seg button{padding:5px 11px;font-size:14px}
+#toneBtn[data-tone="haggle"]{color:var(--accent);border-color:var(--accent);font-weight:700}
+#toneBtn[data-tone="rude"]{color:var(--warn);border-color:var(--warn);font-weight:700}
 .status{font-size:14px;color:var(--muted);min-height:1.3em;margin:0}
 .status.err{color:var(--warn)}
 .paylink{display:inline-block;margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:700;text-decoration:none;font-size:14px}
@@ -139,6 +141,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
         <button type="button" data-c="ja" aria-pressed="true">日本</button>
         <button type="button" data-c="ko" aria-pressed="false">韓國</button>
       </div>
+      <button type="button" class="btn" id="toneBtn">語氣：有禮貌</button>
       <button type="button" class="btn" id="reset">清空</button>
       <button type="button" class="btn" id="more">常用句・設定</button>
     </div>
@@ -188,6 +191,11 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <label>API 餘額</label>
       <div class="links"><a href="https://platform.claude.com/settings/billing" target="_blank" rel="noopener">儲值／查看餘額</a><a href="https://platform.claude.com/dashboard" target="_blank" rel="noopener">開啟主控台</a></div>
       <p class="hint">建議在 Billing 頁打開「Auto-reload（自動儲值）」：餘額低於設定金額時會自動從信用卡加值，人在國外也不會用到一半斷掉。</p>
+    </div>
+    <div class="field">
+      <label>翻譯語氣</label>
+      <div class="chips" role="group" aria-label="翻譯語氣" id="toneSeg"></div>
+      <p class="hint" id="toneHint"></p>
     </div>
     <label class="check"><input type="checkbox" id="autoSpeak" checked> 翻譯完自動念出來</label>
     <div class="row" style="display:flex;gap:8px">
@@ -283,6 +291,14 @@ let country = store.get("country","ja"); if(!C[country]) country="ja";
 let apiKey = store.get("apiKey","");
 let model = store.get("model","claude-haiku-5-5");
 let autoSpeak = store.get("autoSpeak",true);
+// 翻譯語氣：只影響「翻成外文」的說法；對方的話翻回中文時，有禮貌／殺價用友善語氣，正常／沒禮貌保留對方原本語氣
+const TONES = {
+  polite:{label:"有禮貌",hint:"預設。說得再直接，也會翻成對店員、陌生人說話的客氣請求。"},
+  haggle:{label:"殺價傲嬌",hint:"殺價專用：嘴上嫌棄、假裝不在乎，其實很想買，語氣彆扭又可愛，想辦法讓對方降價。"},
+  normal:{label:"正常",hint:"照原意和原本的語氣翻，不刻意加客套話。"},
+  rude:{label:"沒禮貌",hint:"直接、不客氣的平輩口語和命令句，不會出現髒話。可能讓對方不舒服，請小心使用。"}
+};
+let tone = store.get("tone","polite"); if(!TONES[tone]) tone="polite";
 let cat = "點餐";
 let msgs = []; // {who:"me"|"them", zh, fx, reading, tip}
 let busy = false;
@@ -352,19 +368,30 @@ const TR_SCHEMA = {type:"object",additionalProperties:false,
 function contextLines(){
   return msgs.slice(0,4).reverse().map(m=>(m.who==="me"?"旅客：":"當地人：")+m.zh).join("\n");
 }
+function toneRules(c){
+  const ja = country==="ja";
+  if(tone==="haggle") return `語氣規則（殺價傲嬌）：旅客正在殺價。翻成${c.lang}時，用帶有傲嬌屬性的說法：嘴上嫌棄、假裝不是很想要、有點彆扭，但聽得出其實很想買，整體可愛、不讓人生氣，目的是讓對方願意降價。可以自然加上殺價常用說法（例如能不能便宜一點、買多一點有沒有折扣）。可參考的語感：${ja?"「べ、別に欲しいわけじゃないけど…もうちょっと安くならない？」":"「뭐, 꼭 사고 싶은 건 아닌데… 조금만 깎아 주면 안 돼요?」"}。不罵人、不用髒話。
+- 翻成中文時，用客氣、友善的語氣。`;
+  if(tone==="normal") return `語氣規則（正常）：忠實翻出原意和原本的語氣，不刻意加客套話，也不刻意變得不客氣。翻成${c.lang}時用一般對陌生人說話的自然說法${ja?"（です・ます體）":"（해요體）"}。
+- 翻成中文時，保留對方原本的語氣。`;
+  if(tone==="rude") return `語氣規則（沒禮貌）：旅客選擇直接、不客氣的說法。翻成${c.lang}時用平輩口語、命令形，不加禮貌用語和客套話，語氣直接、不耐煩也可以；但絕對不使用髒話、侮辱人或歧視的字眼。
+- 翻成中文時，保留對方原本的語氣。`;
+  return `語氣規則（有禮貌，最重要的原則）：
+- 翻成${c.lang}時，一律用對陌生人、店員、服務人員說話的禮貌語氣。旅客說得直接或像命令（例如「給我水」「這個多少」「快一點」），要改成客氣的請求或詢問，自然地加上當地習慣的禮貌用語（例如${ja?"すみません、お願いします、いただけますか":"저기요、주세요、-아/어 주시겠어요"}），但不可增加或改變原本的意思。
+- 不用平輩口語、不用命令形，也不要翻出粗魯或失禮的字眼；原文有不禮貌的字，用委婉的說法表達同樣的意思。
+- 翻成中文時，也用客氣、友善的語氣。`;
+}
 function buildPrompt(text, who){
   const c=C[country];
+  const target = tone==="polite" ? c.style : c.lang;
   const rule = who==="me"
-    ? `原文是旅客說的中文。翻成${c.style}，用當地人在店家、車站實際會說的說法，不要逐字直譯。from 填 "zh"。`
+    ? `原文是旅客說的中文。翻成${target}，用當地人實際會說的說法，不要逐字直譯。from 填 "zh"。`
     : who==="them"
     ? `原文是當地人說的${c.lang}。翻成台灣用語的繁體中文，口語自然。from 填 "${country}"。`
-    : `先判斷原文語言。中文就翻成${c.style}（from 填 "zh"）；${c.lang}或其他外語就翻成台灣用語的繁體中文（from 填 "${country}" 或 "other"）。`;
+    : `先判斷原文語言。中文就翻成${target}（from 填 "zh"）；${c.lang}或其他外語就翻成台灣用語的繁體中文（from 填 "${country}" 或 "other"）。`;
   const ctx = contextLines();
   return `你是台灣旅客在${c.name}和當地人面對面溝通的口譯。${rule}
-禮貌是最重要的原則：
-- 翻成${c.lang}時，一律用對陌生人、店員、服務人員說話的禮貌語氣。旅客說得直接或像命令（例如「給我水」「這個多少」「快一點」），要改成客氣的請求或詢問，自然地加上當地習慣的禮貌用語（例如${country==="ja"?"すみません、お願いします、いただけますか":"저기요、주세요、-아/어 주시겠어요"}），但不可增加或改變原本的意思。
-- 不用平輩口語、不用命令形，也不要翻出粗魯或失禮的字眼；原文有不禮貌的字，用委婉的說法表達同樣的意思。
-- 翻成中文時，也用客氣、友善的語氣。
+${toneRules(c)}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
 reading：譯文是${c.lang}時填整句${c.reading}，否則空字串。
 tip：只有真的有幫助時，用一句繁體中文提醒旅客禮節或對方可能的回答，否則空字串。
@@ -535,7 +562,24 @@ function renderSettings(){
   $("key").value=apiKey;
   document.querySelectorAll("#modelSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===model));
   $("autoSpeak").checked=autoSpeak;
+  renderTone();
 }
+function setTone(t){ tone=t; store.set("tone",t); renderTone() }
+function renderTone(){
+  const seg=$("toneSeg"); seg.replaceChildren();
+  Object.entries(TONES).forEach(([k,v])=>{
+    const b=el("button",null,v.label); b.type="button";
+    b.setAttribute("aria-pressed",k===tone); b.onclick=()=>setTone(k);
+    seg.append(b);
+  });
+  $("toneHint").textContent=TONES[tone].hint;
+  $("toneBtn").textContent="語氣："+TONES[tone].label;
+  $("toneBtn").dataset.tone=tone;
+}
+$("toneBtn").onclick=()=>{
+  const keys=Object.keys(TONES), next=keys[(keys.indexOf(tone)+1)%keys.length];
+  setTone(next); toast("翻譯語氣："+TONES[next].label);
+};
 document.querySelectorAll("#modelSeg button").forEach(b=>b.onclick=()=>{model=b.dataset.m;store.set("model",model);renderSettings()});
 $("autoSpeak").onchange=e=>{autoSpeak=e.target.checked;store.set("autoSpeak",autoSpeak)};
 function readKey(){apiKey=$("key").value.trim();store.set("apiKey",apiKey)}
