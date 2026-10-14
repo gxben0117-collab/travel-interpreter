@@ -98,8 +98,16 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .tools .btn{padding:6px 10px;font-size:14px}
 .tools .seg button{padding:5px 11px;font-size:14px}
-#toneBtn[data-tone="haggle"]{color:var(--accent);border-color:var(--accent);font-weight:700}
-#toneBtn[data-tone="rude"]{color:var(--warn);border-color:var(--warn);font-weight:700}
+.menu-btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13px;letter-spacing:0;padding:4px 10px;border-radius:999px;cursor:pointer}
+.menu-btn svg{width:16px;height:16px;flex:none}
+.menu-btn[data-tone="haggle"]{color:var(--accent);border-color:var(--accent);font-weight:700}
+.menu-btn[data-tone="rude"]{color:var(--warn);border-color:var(--warn);font-weight:700}
+.sheet-bg{position:fixed;inset:0;z-index:7;background:color-mix(in srgb,var(--ink) 35%,transparent)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--surface);border-radius:18px 18px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px;max-height:85%;overflow-y:auto;box-shadow:0 -6px 24px color-mix(in srgb,var(--ink) 18%,transparent)}
+.sheet-sec{display:flex;flex-direction:column;gap:8px}
+.sheet-lbl{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.sheet-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sheet-actions .btn{padding:12px 6px}
 .status{font-size:14px;color:var(--muted);min-height:1.3em;margin:0}
 .status.err{color:var(--warn)}
 .paylink{display:inline-block;margin-left:6px;padding:4px 10px;border-radius:8px;background:var(--accent);color:var(--on-accent);font-weight:700;text-decoration:none;font-size:14px}
@@ -128,7 +136,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
     <button type="button" class="mic" id="micThem"><svg><use href="#i-mic"/></svg><span id="micThemLbl">話す</span></button>
   </div>
   <div class="pane me">
-    <div class="who-bar"><b>我的畫面</b><span>上半部倒過來給對方看</span></div>
+    <div class="who-bar"><b>我的畫面</b><button type="button" class="menu-btn" id="menuBtn" aria-haspopup="dialog"><span id="menuLbl">日本・有禮貌</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
     <div class="log" id="logMe"></div>
     <p class="status" id="fStatus"></p>
     <button type="button" class="mic" id="micMe"><svg><use href="#i-mic"/></svg><span id="micMeLbl">按一下，說中文</span></button>
@@ -136,17 +144,30 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <input type="text" id="src" placeholder="或用打字（中文、外文都可以）" enterkeyhint="send">
       <button type="button" class="btn" id="go">送出</button>
     </div>
-    <div class="tools">
-      <div class="seg" role="group" aria-label="旅行國家">
-        <button type="button" data-c="ja" aria-pressed="true">日本</button>
-        <button type="button" data-c="ko" aria-pressed="false">韓國</button>
-      </div>
-      <button type="button" class="btn" id="toneBtn">語氣：有禮貌</button>
-      <button type="button" class="btn" id="reset">清空</button>
-      <button type="button" class="btn" id="more">常用句・設定</button>
-    </div>
   </div>
 </section>
+
+<div class="sheet-bg" id="sheetBg" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="選單" hidden>
+  <div class="sheet-sec">
+    <span class="sheet-lbl">旅行國家</span>
+    <div class="seg" role="group" aria-label="旅行國家" style="align-self:flex-start">
+      <button type="button" data-c="ja" aria-pressed="true">日本</button>
+      <button type="button" data-c="ko" aria-pressed="false">韓國</button>
+    </div>
+  </div>
+  <div class="sheet-sec">
+    <span class="sheet-lbl">翻譯語氣</span>
+    <div class="chips" role="group" aria-label="翻譯語氣" id="toneSeg2"></div>
+    <p class="hint" id="toneHint2"></p>
+  </div>
+  <div class="sheet-actions">
+    <button type="button" class="btn" id="reset">清空對話</button>
+    <button type="button" class="btn" id="goPhr">常用句</button>
+    <button type="button" class="btn" id="goSet">設定</button>
+  </div>
+  <button type="button" class="btn primary" id="sheetClose">完成</button>
+</div>
 
 <div class="wrap" id="main" hidden>
   <header>
@@ -347,7 +368,7 @@ async function callClaude(content, schema, maxTokens){
 }
 function errCopy(e){
   return ({
-    nokey:"還沒設定 API 金鑰，按「常用句・設定」到最下面設定。",
+    nokey:"還沒設定 API 金鑰，按右上角選單 → 設定。",
     badkey:"API 金鑰錯誤或已停用，請到設定重新貼上。",
     credit:"API 餘額用完了，按右邊按鈕用手機儲值。",
     rate:"翻譯太密集了，等幾秒再試。",
@@ -505,7 +526,7 @@ function renderConv(){
   them.scrollTop=0; me.scrollTop=0;
 }
 function pushMsg(m){msgs.unshift(m);msgs=msgs.slice(0,30);store.set("conv_"+country,msgs);renderConv()}
-$("reset").onclick=()=>{msgs=[];store.set("conv_"+country,[]);renderConv();fStatus("")};
+$("reset").onclick=()=>{msgs=[];store.set("conv_"+country,[]);renderConv();fStatus("");openSheet(false);toast("對話已清空")};
 $("go").onclick=()=>{const v=$("src").value;$("src").value="";unlockSpeech();translate(v,"auto")};
 $("src").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();$("go").click()}});
 
@@ -546,8 +567,13 @@ function setCountry(c){
   $("themTitle").textContent=C[c].themTitle; $("themHint").textContent=C[c].themHint;
   document.querySelector('meta[name="theme-color"]').content = c==="ja"?"#2c3b8f":"#0d7466";
   msgs=store.get("conv_"+c,[]);
-  setMicUI(); renderConv(); renderPhrases(); renderSOS();
+  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
 }
+function updateMenuLbl(){
+  $("menuLbl").textContent=C[country].name+"・"+TONES[tone].label;
+  $("menuBtn").dataset.tone=tone;
+}
+function openSheet(on){ $("sheet").hidden=!on; $("sheetBg").hidden=!on }
 document.querySelectorAll(".seg button[data-c]").forEach(b=>b.onclick=()=>setCountry(b.dataset.c));
 function openF2F(on){ $("f2f").hidden=!on; $("main").hidden=on; document.body.classList.toggle("f2f-on",on) }
 function showTab(k){
@@ -555,7 +581,11 @@ function showTab(k){
   $("tab-q").hidden=k!=="q";
 }
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ if(b.dataset.tab==="t"){openF2F(true);return} showTab(b.dataset.tab) });
-$("more").onclick=()=>{ if(rec) rec.stop(); openF2F(false); showTab("q"); window.scrollTo(0,0) };
+$("menuBtn").onclick=()=>{ if(rec) rec.stop(); openSheet(true) };
+$("sheetBg").onclick=()=>openSheet(false);
+$("sheetClose").onclick=()=>openSheet(false);
+$("goPhr").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); window.scrollTo(0,0) };
+$("goSet").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); $("settings").scrollIntoView() };
 
 // ---------- 設定 ----------
 function renderSettings(){
@@ -566,20 +596,17 @@ function renderSettings(){
 }
 function setTone(t){ tone=t; store.set("tone",t); renderTone() }
 function renderTone(){
-  const seg=$("toneSeg"); seg.replaceChildren();
-  Object.entries(TONES).forEach(([k,v])=>{
-    const b=el("button",null,v.label); b.type="button";
-    b.setAttribute("aria-pressed",k===tone); b.onclick=()=>setTone(k);
-    seg.append(b);
+  [["toneSeg","toneHint"],["toneSeg2","toneHint2"]].forEach(([segId,hintId])=>{
+    const seg=$(segId); seg.replaceChildren();
+    Object.entries(TONES).forEach(([k,v])=>{
+      const b=el("button",null,v.label); b.type="button";
+      b.setAttribute("aria-pressed",k===tone); b.onclick=()=>setTone(k);
+      seg.append(b);
+    });
+    $(hintId).textContent=TONES[tone].hint;
   });
-  $("toneHint").textContent=TONES[tone].hint;
-  $("toneBtn").textContent="語氣："+TONES[tone].label;
-  $("toneBtn").dataset.tone=tone;
+  updateMenuLbl();
 }
-$("toneBtn").onclick=()=>{
-  const keys=Object.keys(TONES), next=keys[(keys.indexOf(tone)+1)%keys.length];
-  setTone(next); toast("翻譯語氣："+TONES[next].label);
-};
 document.querySelectorAll("#modelSeg button").forEach(b=>b.onclick=()=>{model=b.dataset.m;store.set("model",model);renderSettings()});
 $("autoSpeak").onchange=e=>{autoSpeak=e.target.checked;store.set("autoSpeak",autoSpeak)};
 function readKey(){apiKey=$("key").value.trim();store.set("apiKey",apiKey)}
