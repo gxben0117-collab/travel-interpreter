@@ -115,6 +115,10 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .round{width:52px;height:52px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px color-mix(in srgb,var(--ink) 12%,transparent)}
 .round svg{width:22px;height:22px}
 .round[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.quick{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0;-webkit-overflow-scrolling:touch}
+.quick::-webkit-scrollbar{display:none}
+.quick button{flex:none;font:inherit;font-size:14px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.bubble .back-tr{font-size:13px;color:var(--muted);border-top:1px dashed var(--line);padding-top:4px;margin-top:2px}
 .compose{display:flex;gap:8px}
 .compose input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 14px;border:1px solid var(--line);border-radius:22px;background:var(--surface);color:var(--ink)}
 .compose .btn{padding:8px 14px;font-size:15px;border-radius:22px}
@@ -157,6 +161,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
     <div class="log" id="logMe"></div>
     <div class="bubble live" id="liveMe"><button type="button" class="lang" id="menuBtn" aria-haspopup="dialog"><span id="menuLbl">中文 → 日文・有禮貌</span><svg><use href="#i-chev"/></svg></button><p class="t" id="liveMeT">點一下麥克風來說話</p></div>
     <p class="status" id="fStatus"></p>
+    <div class="quick" id="quick" role="group" aria-label="快速句"></div>
     <div class="compose" id="compose" hidden>
       <input type="text" id="src" placeholder="打字（中文、外文都可以）" enterkeyhint="send">
       <button type="button" class="btn" id="go">送出</button>
@@ -447,10 +452,10 @@ function errCopy(e){
 }
 
 const TR_SCHEMA = {type:"object",additionalProperties:false,
-  required:["from","text","reading","tip"],
+  required:["from","text","reading","back","tip"],
   properties:{
     from:{type:"string",enum:["zh","ja","ko","other"]},
-    text:{type:"string"}, reading:{type:"string"}, tip:{type:"string"}
+    text:{type:"string"}, reading:{type:"string"}, back:{type:"string"}, tip:{type:"string"}
   }};
 function contextLines(){
   return msgs.slice(0,4).reverse().map(m=>(m.who==="me"?"旅客：":"當地人：")+m.zh).join("\n");
@@ -489,6 +494,7 @@ function buildPrompt(text, who){
 ${toneRules(c)}${genderRule()}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
 reading：譯文是${c.lang}時填整句${c.reading}，否則空字串。
+back：譯文是${c.lang}時，把「譯文」忠實翻回台灣用語的繁體中文，讓旅客確認對方實際會聽到什麼意思（依譯文翻，不要照抄原文）；否則空字串。
 tip：只有真的有幫助時，用一句繁體中文提醒旅客禮節或對方可能的回答，否則空字串。
 ${ctx?"先前的對話（供理解上下文，不用翻譯）：\n"+ctx+"\n":""}
 原文：
@@ -505,7 +511,7 @@ async function translate(text, who){
     const out = String(r.text||"").trim(); if(!out) throw {code:"format"};
     const fromZh = who==="me" || (who!=="them" && r.from==="zh");
     const m = fromZh
-      ? {who:"me",zh:text,fx:out,reading:String(r.reading||""),tip:String(r.tip||"")}
+      ? {who:"me",zh:text,fx:out,reading:String(r.reading||""),back:String(r.back||""),tip:String(r.tip||"")}
       : {who:"them",fx:text,zh:out,tip:String(r.tip||"")};
     pushMsg(m);
     fStatus("");
@@ -582,6 +588,7 @@ function bubbleRow(side, texts, play){
   b.append(el("p","t",texts.t));
   if(texts.sub) b.append(el("span","sub",texts.sub));
   if(texts.rd) b.append(el("span","rd",texts.rd));
+  if(texts.back) b.append(el("span","back-tr","意思："+texts.back));
   if(texts.tip) b.append(el("span","tip",texts.tip));
   row.append(b);
   if(play){
@@ -599,7 +606,7 @@ function renderConv(){
   }else{
     msgs.slice(0,12).reverse().forEach(m=>{
       if(m.who==="me"){
-        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,tip:m.tip}));
+        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,back:m.back,tip:m.tip}));
         them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr,myGender)));
       }else{
         me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW",themGender)));
@@ -670,14 +677,14 @@ function setCountry(c){
   $("sub").textContent="中文 ⇄ "+C[c].lang;
   $("themLang").textContent=C[c].native;
   msgs=store.get("conv_"+c,[]);
-  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender();
+  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender(); renderQuick();
 }
 function updateMenuLbl(){
   $("menuLbl").textContent="中文 → "+C[country].lang+"・"+TONES[tone].label;
 }
 function openSheet(on){ $("sheet").hidden=!on; $("sheetBg").hidden=!on }
 document.querySelectorAll(".seg button[data-c]").forEach(b=>b.onclick=()=>setCountry(b.dataset.c));
-function openF2F(on){ $("f2f").hidden=!on; $("main").hidden=on; document.body.classList.toggle("f2f-on",on) }
+function openF2F(on){ $("f2f").hidden=!on; $("main").hidden=on; document.body.classList.toggle("f2f-on",on); if(on) keepAwake(); else releaseAwake() }
 function showTab(k){
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===k));
   $("tab-q").hidden=k!=="q";
@@ -760,6 +767,43 @@ function renderSOS(){
 }
 function openOverlay(big,small){$("ovBig").textContent=big;$("ovSmall").textContent=small||"";$("ov").hidden=false}
 $("ov").onclick=()=>$("ov").hidden=true;
+
+// ---------- 一鍵快速句（固定翻譯，不用 AI、不花錢） ----------
+// [中文, 日文, 日文拼音, 韓文, 韓文拼音]
+const QUICK = [
+  ["請再說一次","もう一度お願いします。","mō ichido onegai shimasu","다시 한 번 말씀해 주세요.","dasi han beon malsseumhae juseyo"],
+  ["請說慢一點","ゆっくり話していただけますか。","yukkuri hanashite itadakemasu ka","천천히 말씀해 주시겠어요?","cheoncheonhi malsseumhae jusigesseoyo"],
+  ["我聽不懂","すみません、わかりません。","sumimasen, wakarimasen","죄송해요, 잘 모르겠어요.","joesonghaeyo, jal moreugesseoyo"],
+  ["請寫下來","書いていただけますか。","kaite itadakemasu ka","적어 주시겠어요?","jeogeo jusigesseoyo"],
+  ["好的","はい、わかりました。","hai, wakarimashita","네, 알겠어요.","ne, algesseoyo"],
+  ["謝謝","ありがとうございます。","arigatō gozaimasu","감사합니다.","gamsahamnida"]
+];
+function renderQuick(){
+  const box=$("quick"); box.replaceChildren();
+  const ja=country==="ja";
+  QUICK.forEach(q=>{
+    const b=el("button",null,q[0]); b.type="button";
+    b.onclick=()=>{
+      unlockSpeech(); keepAwake();
+      const fx=ja?q[1]:q[3];
+      pushMsg({who:"me",zh:q[0],fx,reading:ja?q[2]:q[4],back:"",tip:""});
+      speak(fx,C[country].sr,myGender);
+    };
+    box.append(b);
+  });
+}
+
+// ---------- 螢幕常亮（面對面翻譯時不要自動變暗） ----------
+let wakeLock=null;
+async function keepAwake(){
+  if(!("wakeLock" in navigator) || $("f2f").hidden || document.visibilityState!=="visible") return;
+  if(wakeLock && !wakeLock.released) return;
+  try{ wakeLock = await navigator.wakeLock.request("screen") }catch{}
+}
+function releaseAwake(){ try{ wakeLock && wakeLock.release() }catch{} wakeLock=null }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") keepAwake() });
+// iPhone 要在使用者點過畫面後才允許常亮，所以第一次點擊時再要一次
+document.addEventListener("pointerdown",()=>keepAwake(),{passive:true});
 
 // ---------- 啟動 ----------
 setCountry(country);
