@@ -241,6 +241,27 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <p class="hint" id="toneHint"></p>
     </div>
     <div class="field">
+      <label>我的性別</label>
+      <div class="seg" role="group" aria-label="我的性別" id="myGSeg" style="align-self:flex-start">
+        <button type="button" data-g="male" aria-pressed="false">男</button>
+        <button type="button" data-g="female" aria-pressed="false">女</button>
+      </div>
+      <p class="hint">朗讀你說的話時用同性別的聲音；翻成日文時，自稱用語也會符合性別。</p>
+    </div>
+    <div class="field">
+      <label>對方的聲音</label>
+      <div class="seg" role="group" aria-label="對方的聲音" id="themGSeg" style="align-self:flex-start">
+        <button type="button" data-g="male" aria-pressed="false">男聲</button>
+        <button type="button" data-g="female" aria-pressed="true">女聲</button>
+      </div>
+      <p class="hint">對方的話翻成中文念給你聽時，用這個聲音。</p>
+    </div>
+    <div class="row" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn" id="tryMy">試聽我的聲音</button>
+      <button type="button" class="btn" id="tryThem">試聽對方的聲音</button>
+    </div>
+    <p class="hint" id="voiceInfo"></p>
+    <div class="field">
       <label>介面顏色</label>
       <div class="skins" role="group" aria-label="介面顏色" id="skinSeg"></div>
     </div>
@@ -352,6 +373,8 @@ const SKINS = { // 名稱、色票（背景、主色）、手機狀態列顏色
   pink:{label:"淺粉紅",dot:"linear-gradient(135deg,#fdedf3 50%,#c23f73 50%)",bar:"#fdedf3"},
   gold:{label:"豪華金",dot:"linear-gradient(135deg,#120f09 50%,#d4af37 50%)",bar:"#120f09"}
 };
+let myGender = store.get("myGender",""); // "" 代表還沒選
+let themGender = store.get("themGender","female");
 let skin = store.get("skin","white"); if(!SKINS[skin]) skin="white";
 function applySkin(k){
   skin=k; store.set("skin",k); document.body.dataset.skin=k;
@@ -441,6 +464,17 @@ function toneRules(c){
 - 不用平輩口語、不用命令形，也不要翻出粗魯或失禮的字眼；原文有不禮貌的字，用委婉的說法表達同樣的意思。
 - 翻成中文時，也用客氣、友善的語氣。`;
 }
+function genderRule(){
+  if(!myGender) return "";
+  const g = myGender==="male" ? "男性" : "女性";
+  if(country==="ja"){
+    const self = tone==="polite"
+      ? "需要自稱時用「私」（禮貌場合男女通用）"
+      : (myGender==="male" ? "需要自稱時用「僕」" : "需要自稱時用「私」");
+    return `\n旅客是${g}：翻成日文時，${self}，句尾和語氣自然符合${g}的說話方式；原文沒有提到自己時不要硬加主詞。`;
+  }
+  return `\n旅客是${g}：翻成韓文時語氣自然符合${g}的說話方式，但不要因此改變意思或禮貌程度。`;
+}
 function buildPrompt(text, who){
   const c=C[country];
   const target = tone==="polite" ? c.style : c.lang;
@@ -452,7 +486,7 @@ function buildPrompt(text, who){
   const ctx = contextLines();
   return `你是台灣旅客在${c.name}和當地人面對面溝通的口譯。${rule}
 正確是第一原則：意思必須完整、正確，不可漏譯、不可自行增加內容。數字、價格、數量、時間、日期、地名、人名、過敏原、身體狀況等資訊要完全照原文翻出；語音辨識結果明顯有誤又無法判斷時，照最可能的意思翻，並在 tip 用一句話提醒旅客再確認。
-${toneRules(c)}
+${toneRules(c)}${genderRule()}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
 reading：譯文是${c.lang}時填整句${c.reading}，否則空字串。
 tip：只有真的有幫助時，用一句繁體中文提醒旅客禮節或對方可能的回答，否則空字串。
@@ -475,7 +509,7 @@ async function translate(text, who){
       : {who:"them",fx:text,zh:out,tip:String(r.tip||"")};
     pushMsg(m);
     fStatus("");
-    if(autoSpeak) speak(fromZh?m.fx:m.zh, fromZh?C[country].sr:"zh-TW");
+    if(autoSpeak){ if(fromZh) speak(m.fx,C[country].sr,myGender); else speak(m.zh,"zh-TW",themGender) }
   }catch(e){ fStatus(errCopy(e),true); if(e&&e.code==="credit") $("fStatus").append(payLink()); renderConv() }
   finally{ busy=false; $("go").disabled=false }
 }
@@ -560,15 +594,15 @@ function renderConv(){
   const c=C[country], them=$("logThem"), me=$("logMe");
   them.replaceChildren(); me.replaceChildren();
   if(!msgs.length){
-    them.append(bubbleRow("l",{t:c.intro},()=>speak(c.intro,c.sr)));
+    them.append(bubbleRow("l",{t:c.intro},()=>speak(c.intro,c.sr,myGender)));
     me.append(el("p","note-empty","手機平放在你們中間，上半部是給對方看的。你按下面的麥克風說中文，對方按上面的麥克風說"+c.lang+"。"));
   }else{
     msgs.slice(0,12).reverse().forEach(m=>{
       if(m.who==="me"){
         me.append(bubbleRow("r",{t:m.zh,sub:m.fx,rd:m.reading,tip:m.tip}));
-        them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr)));
+        them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr,myGender)));
       }else{
-        me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW")));
+        me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW",themGender)));
         them.append(bubbleRow("r",{t:m.fx,sub:m.zh}));
       }
     });
@@ -586,27 +620,46 @@ $("src").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.isComposing){e.pr
 let voices = [];
 function loadVoices(){ try{ voices = speechSynthesis.getVoices() || [] }catch{} }
 if(canSpeak){ loadVoices(); try{ speechSynthesis.addEventListener("voiceschanged", loadVoices) }catch{} }
-function pickVoice(lang){
+// 瀏覽器不提供聲音的性別，只能從常見聲音名稱判斷（iPhone、Android、Windows 常見名稱）
+const MALE_VOICES = /otoya|hattori|ichiro|keita|daichi|naoki|minsu|jian|injoon|hyunsu|bongjin|gookmin|li-?mu|han\b|yunjian|yunxi|yunyang|kangkang|zhiwei|yunjhe|male|男/i;
+const FEMALE_VOICES = /kyoko|o-?ren|nanami|haruka|ayumi|sayaka|mizuki|yuna|sora|sunhi|heami|seoyeon|jimin|meijia|mei-?jia|tingting|ting-?ting|sinji|yu-?shu|hanhan|yating|hsiaochen|hsiaoyu|xiaoxiao|xiaoyi|huihui|美佳|京子|female|女/i;
+function voiceGender(v){ const n=v.name||""; return FEMALE_VOICES.test(n)?"female":MALE_VOICES.test(n)?"male":"" } // 先判女聲（"female" 字串含 "male"）
+function pickVoice(lang, gender){
   if(!voices.length) loadVoices();
   const norm = v => (v.lang||"").toLowerCase().replace("_","-");
   const l = lang.toLowerCase(), base = l.split("-")[0];
   const same = voices.filter(v => norm(v) === l);
   const near = voices.filter(v => norm(v).startsWith(base));
   const pool = same.length ? same : near;
-  return pool.find(v => v.localService) || pool[0] || null;
+  if(gender){
+    const g = pool.filter(v => voiceGender(v)===gender);
+    if(g.length) return {voice:g.find(v=>v.localService)||g[0], exact:true};
+  }
+  const v = pool.find(v => v.localService) || pool[0] || null;
+  return v ? {voice:v, exact:!gender || voiceGender(v)===gender} : null;
 }
 const LANG_NAME = {"ja-JP":"日文","ko-KR":"韓文","zh-TW":"中文"};
 function missingVoice(lang){
   if(missingVoice[lang]) return; missingVoice[lang] = true;
   toast("這支手機沒有"+(LANG_NAME[lang]||"這個語言")+"朗讀聲音。iPhone：設定 → 輔助使用 → 朗讀內容 → 聲音，下載"+(LANG_NAME[lang]||"")+"聲音");
 }
-function speak(text,lang){
+function speak(text,lang,gender){
   if(!canSpeak||!text) return;
   try{
     const u=new SpeechSynthesisUtterance(text); u.lang=lang; u.rate=.95;
-    const v=pickVoice(lang); if(v) u.voice=v; else missingVoice(lang);
+    const r=pickVoice(lang,gender);
+    if(r){
+      u.voice=r.voice;
+      // 手機裡沒有該性別的聲音時，用音調高低模擬
+      if(!r.exact && gender) u.pitch = gender==="male" ? 0.75 : 1.2;
+    } else missingVoice(lang);
     speechSynthesis.cancel(); speechSynthesis.speak(u);
   }catch{}
+}
+function voiceName(lang,gender){
+  const r=pickVoice(lang,gender);
+  if(!r) return "沒有聲音";
+  return r.voice.name + (r.exact ? "" : "（手機裡沒有"+(gender==="male"?"男":"女")+"聲，改用音調模擬）");
 }
 
 // ---------- 國家、畫面 ----------
@@ -617,7 +670,7 @@ function setCountry(c){
   $("sub").textContent="中文 ⇄ "+C[c].lang;
   $("themLang").textContent=C[c].native;
   msgs=store.get("conv_"+c,[]);
-  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
+  setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl(); renderGender();
 }
 function updateMenuLbl(){
   $("menuLbl").textContent="中文 → "+C[country].lang+"・"+TONES[tone].label;
@@ -641,11 +694,25 @@ $("goPhr").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); window.
 $("goSet").onclick=()=>{ openSheet(false); openF2F(false); showTab("q"); $("settings").scrollIntoView() };
 
 // ---------- 設定 ----------
+function renderGender(){
+  document.querySelectorAll("#myGSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===myGender));
+  document.querySelectorAll("#themGSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.g===themGender));
+  const c=C[country];
+  $("voiceInfo").textContent = canSpeak
+    ? "目前使用：我的聲音（"+c.lang+"）"+voiceName(c.sr,myGender)+"；對方的聲音（中文）"+voiceName("zh-TW",themGender)
+    : "這個瀏覽器不支援朗讀。";
+}
+document.querySelectorAll("#myGSeg button").forEach(b=>b.onclick=()=>{myGender=b.dataset.g;store.set("myGender",myGender);renderGender()});
+document.querySelectorAll("#themGSeg button").forEach(b=>b.onclick=()=>{themGender=b.dataset.g;store.set("themGender",themGender);renderGender()});
+$("tryMy").onclick=()=>{ const c=C[country]; speak(country==="ja"?"すみません、これをお願いします。":"저기요, 이거 주세요.", c.sr, myGender) };
+$("tryThem").onclick=()=>speak("您好，請問需要什麼呢？","zh-TW",themGender);
+if(canSpeak){ try{ speechSynthesis.addEventListener("voiceschanged", ()=>{ if($("voiceInfo")) renderGender() }) }catch{} }
 function renderSettings(){
   $("key").value=apiKey;
   document.querySelectorAll("#modelSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===model));
   $("autoSpeak").checked=autoSpeak;
   renderTone();
+  renderGender();
 }
 function setTone(t){ tone=t; store.set("tone",t); renderTone() }
 function renderTone(){
@@ -683,7 +750,7 @@ function renderPhrases(){
     const fx=ja?p[1]:p[3], rd=ja?p[2]:p[4];
     const b=el("button","item");b.type="button";
     b.append(el("span","zh",p[0]),el("span","fx",fx),el("span","note",rd));
-    b.onclick=()=>{openOverlay(fx,p[0]);speak(fx,C[country].sr)};
+    b.onclick=()=>{openOverlay(fx,p[0]);speak(fx,C[country].sr,myGender)};
     list.append(b);
   });
 }
