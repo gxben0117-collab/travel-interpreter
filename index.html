@@ -24,8 +24,19 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;--accent:var(--ja);background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
-body[data-country="ja"]{--accent:var(--ja)}
-body[data-country="ko"]{--accent:var(--ko)}
+/* 介面顏色（設定 → 介面顏色）。每組都完整定義，不跟系統深淺色走 */
+body[data-skin="white"]{--bg:#f2f2f7;--surface:#ffffff;--ink:#16181f;--muted:#6b7080;--line:#dcdde3;--accent:#2c3b8f;--on-accent:#ffffff;--warn:#b0362a;--rec:#d23349;color-scheme:light}
+body[data-skin="black"]{--bg:#000000;--surface:#1c1c1e;--ink:#f2f2f7;--muted:#9a9aa2;--line:#2c2c2e;--accent:#6aa8ff;--on-accent:#06101f;--warn:#ff8f80;--rec:#ff5a6e;color-scheme:dark}
+body[data-skin="blue"]{--bg:#e6f2fb;--surface:#ffffff;--ink:#12283a;--muted:#5a7186;--line:#c9dceb;--accent:#1c74b8;--on-accent:#ffffff;--warn:#b0362a;--rec:#d23349;color-scheme:light}
+body[data-skin="green"]{--bg:#e7f5ec;--surface:#ffffff;--ink:#14301f;--muted:#5b7564;--line:#c8e2d1;--accent:#1f7a4f;--on-accent:#ffffff;--warn:#b0362a;--rec:#d23349;color-scheme:light}
+body[data-skin="pink"]{--bg:#fdedf3;--surface:#ffffff;--ink:#3a1626;--muted:#86606f;--line:#f1d0dc;--accent:#c23f73;--on-accent:#ffffff;--warn:#b0362a;--rec:#d23349;color-scheme:light}
+body[data-skin="gold"]{--bg:#120f09;--surface:#211b10;--ink:#f4e6c3;--muted:#b3a17a;--line:#3a3020;--accent:#d4af37;--on-accent:#1a1406;--warn:#ff9a7a;--rec:#e0564a;color-scheme:dark}
+body[data-skin="gold"] .mic,body[data-skin="gold"] .play,body[data-skin="gold"] .btn.primary,body[data-skin="gold"] .seg button[aria-pressed="true"]{background:linear-gradient(135deg,#f3dc8a,#d4af37 45%,#a7801f)}
+body[data-skin="gold"] .bubble{border:1px solid #4a3c22}
+.skins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.skins button{display:flex;align-items:center;gap:8px;font:inherit;font-size:14px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.skins button[aria-pressed="true"]{border:2px solid var(--accent);font-weight:700}
+.skins i{width:18px;height:18px;border-radius:50%;flex:none;border:1px solid color-mix(in srgb,var(--ink) 20%,transparent)}
 body.f2f-on{overflow:hidden}
 [hidden]{display:none!important}
 .wrap{max-width:560px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(40px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
@@ -130,7 +141,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 @media (prefers-reduced-motion:reduce){.spin,.mic.on{animation:none}}
 </style>
 </head>
-<body data-country="ja">
+<body data-country="ja" data-skin="white">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-mic" viewBox="0 0 24 24"><path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 1 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.91V20H8.5a1 1 0 1 0 0 2h7a1 1 0 1 0 0-2H13v-2.59a6 6 0 0 0 5-5.91Z"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></symbol><symbol id="i-kb" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3.5 6.5h17v11h-17zM7 10h.01M10.5 10h.01M14 10h.01M17.5 10h.01M8 14h8"/></symbol><symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M7 4.5v15l13-7.5z"/></symbol><symbol id="i-chev" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m8 9 4-4 4 4M8 15l4 4 4-4"/></symbol></svg>
 
@@ -228,6 +239,10 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
       <label>翻譯語氣</label>
       <div class="chips" role="group" aria-label="翻譯語氣" id="toneSeg"></div>
       <p class="hint" id="toneHint"></p>
+    </div>
+    <div class="field">
+      <label>介面顏色</label>
+      <div class="skins" role="group" aria-label="介面顏色" id="skinSeg"></div>
     </div>
     <label class="check"><input type="checkbox" id="autoSpeak" checked> 翻譯完自動念出來</label>
     <div class="row" style="display:flex;gap:8px">
@@ -329,6 +344,25 @@ const TONES = {
   normal:{label:"正常",hint:"照原意和原本的語氣翻，不刻意加客套話。"}
 };
 let tone = store.get("tone","polite"); if(!TONES[tone]) tone="polite";
+const SKINS = { // 名稱、色票（背景、主色）、手機狀態列顏色
+  white:{label:"白",dot:"linear-gradient(135deg,#ffffff 50%,#2c3b8f 50%)",bar:"#f2f2f7"},
+  black:{label:"黑",dot:"linear-gradient(135deg,#000000 50%,#6aa8ff 50%)",bar:"#000000"},
+  blue:{label:"淺藍",dot:"linear-gradient(135deg,#e6f2fb 50%,#1c74b8 50%)",bar:"#e6f2fb"},
+  green:{label:"淺綠",dot:"linear-gradient(135deg,#e7f5ec 50%,#1f7a4f 50%)",bar:"#e7f5ec"},
+  pink:{label:"淺粉紅",dot:"linear-gradient(135deg,#fdedf3 50%,#c23f73 50%)",bar:"#fdedf3"},
+  gold:{label:"豪華金",dot:"linear-gradient(135deg,#120f09 50%,#d4af37 50%)",bar:"#120f09"}
+};
+let skin = store.get("skin","white"); if(!SKINS[skin]) skin="white";
+function applySkin(k){
+  skin=k; store.set("skin",k); document.body.dataset.skin=k;
+  document.querySelector('meta[name="theme-color"]').content=SKINS[k].bar;
+  const seg=$("skinSeg"); if(!seg) return; seg.replaceChildren();
+  Object.entries(SKINS).forEach(([key,v])=>{
+    const b=el("button"); b.type="button"; b.setAttribute("aria-pressed",key===k);
+    const dot=el("i"); dot.style.background=v.dot; b.append(dot,document.createTextNode(v.label));
+    b.onclick=()=>applySkin(key); seg.append(b);
+  });
+}
 let cat = "點餐";
 let msgs = []; // {who:"me"|"them", zh, fx, reading, tip}
 let busy = false;
@@ -582,7 +616,6 @@ function setCountry(c){
   document.querySelectorAll(".seg button[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));
   $("sub").textContent="中文 ⇄ "+C[c].lang;
   $("themLang").textContent=C[c].native;
-  document.querySelector('meta[name="theme-color"]').content = c==="ja"?"#2c3b8f":"#0d7466";
   msgs=store.get("conv_"+c,[]);
   setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
 }
@@ -664,6 +697,7 @@ $("ov").onclick=()=>$("ov").hidden=true;
 // ---------- 啟動 ----------
 setCountry(country);
 renderSettings();
+applySkin(skin);
 if(apiKey){ openF2F(true) }
 else { openF2F(false); showTab("q"); $("settings").scrollIntoView(); note($("keyStatus"),"第一次使用：先貼上 API 金鑰，再按「儲存並開始」。") ; $("keyStatus").hidden=false }
 if(!SR){ fStatus("這個瀏覽器不支援語音輸入，可以用打字。iPhone 請用 Safari，Android 請用 Chrome。",true) }
