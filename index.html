@@ -96,6 +96,9 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 .bubble .t{font-family:var(--font-big);font-size:clamp(20px,5.8vw,28px);font-weight:700;line-height:1.35;word-break:break-word;margin:0}
 .bubble.tr .t{color:var(--accent)}
 .bubble.tr .sub{color:var(--muted);font-weight:400}
+.bubble.tap{cursor:pointer;transition:transform .1s}
+.bubble.tap:active{transform:scale(.97)}
+.say{cursor:pointer}
 .bubble .sub{font-size:15px;color:var(--accent);font-family:var(--font-big);font-weight:700;word-break:break-word}
 .bubble .rd{font-family:var(--font-mono);font-size:13px;color:var(--muted);word-break:break-word}
 .bubble .tip{font-size:13px;color:var(--muted);line-height:1.5}
@@ -575,34 +578,41 @@ function showLive(who,text){
 }
 
 // ---------- 對話顯示 ----------
-function bubbleRow(side, texts, play){
+// 每個泡泡都能點：點大字念大字、點小字念小字（各用自己的語言）
+function sayLine(node, text, lang, gender){
+  node.classList.add("say");
+  node.onclick=e=>{ e.stopPropagation(); unlockSpeech(); speak(text,lang,gender) };
+}
+function bubbleRow(side, texts, say, play){
   const row=el("div", side==="l"?"row-l":"row-r");
   const b=el("div","bubble"+(side==="l"?" tr":""));
-  b.append(el("p","t",texts.t));
-  if(texts.sub) b.append(el("span","sub",texts.sub));
-  if(texts.rd) b.append(el("span","rd",texts.rd));
+  const t=el("p","t",texts.t); b.append(t);
+  if(say&&say.t) sayLine(t,...say.t);
+  if(texts.sub){ const sub=el("span","sub",texts.sub); b.append(sub); if(say&&say.sub) sayLine(sub,...say.sub) }
   if(texts.tip) b.append(el("span","tip",texts.tip));
+  if(say&&say.t){ b.classList.add("tap"); b.onclick=()=>{ unlockSpeech(); speak(...say.t) } }
   row.append(b);
   if(play){
     const btn=el("button","play"); btn.type="button"; btn.setAttribute("aria-label","播放");
-    btn.innerHTML='<svg><use href="#i-play"/></svg>'; btn.onclick=play; row.append(btn);
+    btn.innerHTML='<svg><use href="#i-play"/></svg>'; btn.onclick=()=>{ unlockSpeech(); play() }; row.append(btn);
   }
   return row;
 }
 function renderConv(){
-  const c=C[country], them=$("logThem"), me=$("logMe");
+  const c=C[country], them=$("logThem"), me=$("logMe"), zh="zh-TW", fx=c.sr;
   them.replaceChildren(); me.replaceChildren();
   if(!msgs.length){
-    them.append(bubbleRow("l",{t:c.intro},()=>speak(c.intro,c.sr,myGender)));
-    me.append(el("p","note-empty","手機平放在你們中間，上半部是給對方看的。你按下面的麥克風說中文，對方按上面的麥克風說"+c.lang+"。"));
+    them.append(bubbleRow("l",{t:c.intro},{t:[c.intro,fx,myGender]},()=>speak(c.intro,fx,myGender)));
+    me.append(el("p","note-empty","手機平放在你們中間，上半部是給對方看的。你按下面的麥克風說中文，對方按上面的麥克風說"+c.lang+"。點任何一句話就會念出來。"));
   }else{
     msgs.slice(0,12).reverse().forEach(m=>{
+      const g = m.who==="me" ? myGender : themGender;
       if(m.who==="me"){
-        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,tip:m.tip}));
-        them.append(bubbleRow("l",{t:m.fx,sub:m.zh},()=>speak(m.fx,c.sr,myGender)));
+        me.append(bubbleRow("r",{t:m.zh,sub:m.fx,tip:m.tip},{t:[m.zh,zh,g],sub:[m.fx,fx,g]}));
+        them.append(bubbleRow("l",{t:m.fx,sub:m.zh},{t:[m.fx,fx,g],sub:[m.zh,zh,g]},()=>speak(m.fx,fx,g)));
       }else{
-        me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},()=>speak(m.zh,"zh-TW",themGender)));
-        them.append(bubbleRow("r",{t:m.fx,sub:m.zh}));
+        me.append(bubbleRow("l",{t:m.zh,sub:m.fx,tip:m.tip},{t:[m.zh,zh,g],sub:[m.fx,fx,g]},()=>speak(m.zh,zh,g)));
+        them.append(bubbleRow("r",{t:m.fx,sub:m.zh},{t:[m.fx,fx,g],sub:[m.zh,zh,g]}));
       }
     });
   }
