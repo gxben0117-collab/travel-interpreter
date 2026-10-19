@@ -152,7 +152,7 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 <section class="f2f" id="f2f" aria-label="面對面翻譯">
   <div class="pane them">
     <div class="log" id="logThem"></div>
-    <div class="bubble live" id="liveThem"><span class="lang" id="themLang">日本語</span><p class="t" id="liveThemT"></p></div>
+    <div class="bubble live" id="liveThem"><button type="button" class="lang" id="themLang" aria-label="切換語言"><span id="themLangT">日本語</span><svg><use href="#i-chev"/></svg></button><p class="t" id="liveThemT"></p></div>
     <div class="ctrl"><button type="button" class="mic" id="micThem" aria-label="話す"><svg><use href="#i-mic"/></svg></button></div>
   </div>
   <div class="divider"></div>
@@ -175,10 +175,11 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 <div class="sheet-bg" id="sheetBg" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-label="選單" hidden>
   <div class="sheet-sec">
-    <span class="sheet-lbl">旅行國家</span>
-    <div class="seg" role="group" aria-label="旅行國家" style="align-self:flex-start">
-      <button type="button" data-c="ja" aria-pressed="true">日本</button>
-      <button type="button" data-c="ko" aria-pressed="false">韓國</button>
+    <span class="sheet-lbl">對方的語言</span>
+    <div class="seg" role="group" aria-label="對方的語言" style="align-self:flex-start">
+      <button type="button" data-c="ja" aria-pressed="true">日文</button>
+      <button type="button" data-c="ko" aria-pressed="false">韓文</button>
+      <button type="button" data-c="en" aria-pressed="false">英文</button>
     </div>
   </div>
   <div class="sheet-sec">
@@ -197,9 +198,10 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 <div class="wrap" id="main" hidden>
   <header>
     <h1>旅途口譯<small id="sub">中文 ⇄ 日文</small></h1>
-    <div class="seg" role="group" aria-label="旅行國家">
-      <button type="button" data-c="ja" aria-pressed="true">日本</button>
-      <button type="button" data-c="ko" aria-pressed="false">韓國</button>
+    <div class="seg" role="group" aria-label="對方的語言">
+      <button type="button" data-c="ja" aria-pressed="true">日文</button>
+      <button type="button" data-c="ko" aria-pressed="false">韓文</button>
+      <button type="button" data-c="en" aria-pressed="false">英文</button>
     </div>
   </header>
 
@@ -265,61 +267,71 @@ h2{font-size:14px;letter-spacing:.06em;color:var(--muted);margin:6px 0 0;font-we
 <script>
 const C = {
   ja:{name:"日本",lang:"日文",sr:"ja-JP",style:"禮貌自然的日文（です・ます體）",reading:"羅馬拼音（Hepburn）",
+      politeEx:"すみません、お願いします、いただけますか",normalForm:"（です・ます體）",
       native:"日本語",tapHint:"マイクをタップして話してください",listening:"聞いています…",otherTalking:"相手が話しています…",mic:"話す",
       meLbl:"旅行者",themLbl:"あなた",
       intro:"こんにちは。翻訳アプリでお話しさせてください。マイクのボタンを押して、日本語で話してください。",
       want:"これをお願いします。",
       sos:[["110","警察"],["119","救護車・消防"],["050-3816-2787","訪日外國人旅遊熱線（24小時，有中文）"],["#7119","不確定要不要叫救護車時諮詢（部分地區）"]]},
   ko:{name:"韓國",lang:"韓文",sr:"ko-KR",style:"禮貌自然的韓文（해요體）",reading:"羅馬拼音（韓國文化觀光部式）",
+      politeEx:"저기요、주세요、-아/어 주시겠어요",normalForm:"（해요體）",
       native:"한국어",tapHint:"마이크를 누르고 말씀해 주세요",listening:"듣고 있어요…",otherTalking:"상대방이 말하고 있어요…",mic:"말하기",
       meLbl:"여행자",themLbl:"나",
       intro:"안녕하세요. 번역 앱으로 대화해도 될까요? 마이크 버튼을 누르고 한국어로 말씀해 주세요.",
       want:"이거 주세요.",
-      sos:[["112","警察"],["119","救護車・消防"],["1330","韓國旅遊諮詢熱線（24小時，有中文）"],["1345","外國人綜合服務中心"]]}
+      sos:[["112","警察"],["119","救護車・消防"],["1330","韓國旅遊諮詢熱線（24小時，有中文）"],["1345","外國人綜合服務中心"]]},
+  en:{name:"國外",lang:"英文",sr:"en-US",style:"禮貌自然的英文",reading:"",
+      politeEx:"Excuse me、please、Could I…?、Would you mind…?",normalForm:"（一般對陌生人的自然口語）",
+      native:"English",tapHint:"Tap the mic and speak",listening:"Listening…",otherTalking:"The traveler is speaking…",mic:"Speak",
+      meLbl:"Traveler",themLbl:"You",
+      intro:"Hello! May I talk with you using this translation app? Please tap the mic button and speak in English.",
+      want:"I'd like this one, please.",
+      sos:[["112","歐洲多數國家、手機通用緊急電話"],["911","美國、加拿大"],["999","英國、香港、新加坡"],["000","澳洲"]]}
 };
-// 常用句：[中文, 日文, 日文拼音, 韓文, 韓文拼音]
+const LANG_ORDER = ["ja","ko","en"];
+// 常用句：[中文, 日文, 日文拼音, 韓文, 韓文拼音, 英文, 英文拼音(空)]
 const P = {
   "點餐":[
-    ["請給我菜單。","メニューをください。","menyū o kudasai","메뉴판 주세요.","menyupan juseyo"],
-    ["我要這個。","これをください。","kore o kudasai","이거 주세요.","igeo juseyo"],
-    ["有中文菜單嗎？","中国語のメニューはありますか？","chūgokugo no menyū wa arimasu ka","중국어 메뉴 있어요?","jungugeo menyu isseoyo"],
-    ["兩位。","二人です。","futari desu","두 명이에요.","du myeong-ieyo"],
-    ["不要辣。","辛くしないでください。","karaku shinaide kudasai","안 맵게 해 주세요.","an maepge hae juseyo"],
-    ["可以外帶嗎？","持ち帰りできますか？","mochikaeri dekimasu ka","포장돼요?","pojang dwaeyo"],
-    ["請結帳。","お会計をお願いします。","okaikei o onegai shimasu","계산해 주세요.","gyesanhae juseyo"],
-    ["可以刷卡嗎？","カードで払えますか？","kādo de haraemasu ka","카드 돼요?","kadeu dwaeyo"]
+    ["請給我菜單。","メニューをください。","menyū o kudasai","메뉴판 주세요.","menyupan juseyo","Could I see the menu, please?",""],
+    ["我要這個。","これをください。","kore o kudasai","이거 주세요.","igeo juseyo","I'd like this one, please.",""],
+    ["有中文菜單嗎？","中国語のメニューはありますか？","chūgokugo no menyū wa arimasu ka","중국어 메뉴 있어요?","jungugeo menyu isseoyo","Do you have a menu in Chinese?",""],
+    ["兩位。","二人です。","futari desu","두 명이에요.","du myeong-ieyo","A table for two, please.",""],
+    ["不要辣。","辛くしないでください。","karaku shinaide kudasai","안 맵게 해 주세요.","an maepge hae juseyo","Not spicy, please.",""],
+    ["可以外帶嗎？","持ち帰りできますか？","mochikaeri dekimasu ka","포장돼요?","pojang dwaeyo","Can I get this to go?",""],
+    ["請結帳。","お会計をお願いします。","okaikei o onegai shimasu","계산해 주세요.","gyesanhae juseyo","Could I have the check, please?",""],
+    ["可以刷卡嗎？","カードで払えますか？","kādo de haraemasu ka","카드 돼요?","kadeu dwaeyo","Can I pay by card?",""]
   ],
   "飲食禁忌":[
-    ["我對花生過敏。","ピーナッツアレルギーがあります。","pīnattsu arerugī ga arimasu","땅콩 알레르기가 있어요.","ttangkong allereugiga isseoyo"],
-    ["這個有放蝦嗎？","これにエビは入っていますか？","kore ni ebi wa haitte imasu ka","이거 새우 들어가요?","igeo saeu deureogayo"],
-    ["我不吃牛肉。","牛肉が食べられません。","gyūniku ga taberaremasen","소고기를 못 먹어요.","sogogireul mot meogeoyo"],
-    ["我吃素。","ベジタリアンです。","bejitarian desu","채식주의자예요.","chaesikjuuija-yeyo"]
+    ["我對花生過敏。","ピーナッツアレルギーがあります。","pīnattsu arerugī ga arimasu","땅콩 알레르기가 있어요.","ttangkong allereugiga isseoyo","I'm allergic to peanuts.",""],
+    ["這個有放蝦嗎？","これにエビは入っていますか？","kore ni ebi wa haitte imasu ka","이거 새우 들어가요?","igeo saeu deureogayo","Does this have shrimp in it?",""],
+    ["我不吃牛肉。","牛肉が食べられません。","gyūniku ga taberaremasen","소고기를 못 먹어요.","sogogireul mot meogeoyo","I don't eat beef.",""],
+    ["我吃素。","ベジタリアンです。","bejitarian desu","채식주의자예요.","chaesikjuuija-yeyo","I'm vegetarian.",""]
   ],
   "交通問路":[
-    ["車站在哪裡？","駅はどこですか？","eki wa doko desu ka","역이 어디예요?","yeogi eodiyeyo"],
-    ["廁所在哪裡？","トイレはどこですか？","toire wa doko desu ka","화장실 어디예요?","hwajangsil eodiyeyo"],
-    ["這班車會到這裡嗎？（指地圖）","これはここに行きますか？","kore wa koko ni ikimasu ka","이거 여기 가요?","igeo yeogi gayo"],
-    ["請到這個地址。","この住所までお願いします。","kono jūsho made onegai shimasu","이 주소로 가 주세요.","i jusoro ga juseyo"],
-    ["請幫我叫計程車。","タクシーを呼んでください。","takushī o yonde kudasai","택시 불러 주세요.","taeksi bulleo juseyo"]
+    ["車站在哪裡？","駅はどこですか？","eki wa doko desu ka","역이 어디예요?","yeogi eodiyeyo","Where is the station?",""],
+    ["廁所在哪裡？","トイレはどこですか？","toire wa doko desu ka","화장실 어디예요?","hwajangsil eodiyeyo","Where is the restroom?",""],
+    ["這班車會到這裡嗎？（指地圖）","これはここに行きますか？","kore wa koko ni ikimasu ka","이거 여기 가요?","igeo yeogi gayo","Does this go here?",""],
+    ["請到這個地址。","この住所までお願いします。","kono jūsho made onegai shimasu","이 주소로 가 주세요.","i jusoro ga juseyo","Please take me to this address.",""],
+    ["請幫我叫計程車。","タクシーを呼んでください。","takushī o yonde kudasai","택시 불러 주세요.","taeksi bulleo juseyo","Could you call a taxi for me, please?",""]
   ],
   "購物":[
-    ["多少錢？","いくらですか？","ikura desu ka","얼마예요?","eolmayeyo"],
-    ["可以免稅嗎？","免税できますか？","menzei dekimasu ka","택스 리펀 돼요?","taekseu ripeon dwaeyo"],
-    ["有其他尺寸嗎？","他のサイズはありますか？","hoka no saizu wa arimasu ka","다른 사이즈 있어요?","dareun saijeu isseoyo"],
-    ["我只是看看。","見ているだけです。","mite iru dake desu","그냥 구경하는 거예요.","geunyang gugyeonghaneun geoyeyo"],
-    ["請給我袋子。","袋をください。","fukuro o kudasai","봉투 주세요.","bongtu juseyo"]
+    ["多少錢？","いくらですか？","ikura desu ka","얼마예요?","eolmayeyo","How much is this?",""],
+    ["可以免稅嗎？","免税できますか？","menzei dekimasu ka","택스 리펀 돼요?","taekseu ripeon dwaeyo","Can I get a tax refund?",""],
+    ["有其他尺寸嗎？","他のサイズはありますか？","hoka no saizu wa arimasu ka","다른 사이즈 있어요?","dareun saijeu isseoyo","Do you have other sizes?",""],
+    ["我只是看看。","見ているだけです。","mite iru dake desu","그냥 구경하는 거예요.","geunyang gugyeonghaneun geoyeyo","I'm just looking, thank you.",""],
+    ["請給我袋子。","袋をください。","fukuro o kudasai","봉투 주세요.","bongtu juseyo","Could I have a bag, please?",""]
   ],
   "住宿":[
-    ["我要辦理入住。","チェックインをお願いします。","chekkuin o onegai shimasu","체크인할게요.","chekeuinhalgeyo"],
-    ["可以寄放行李嗎？","荷物を預かってもらえますか？","nimotsu o azukatte moraemasu ka","짐 맡길 수 있어요?","jim matgil su isseoyo"],
-    ["Wi-Fi 密碼是什麼？","Wi-Fiのパスワードは何ですか？","waifai no pasuwādo wa nan desu ka","와이파이 비밀번호가 뭐예요?","waipai bimilbeonhoga mwoyeyo"]
+    ["我要辦理入住。","チェックインをお願いします。","chekkuin o onegai shimasu","체크인할게요.","chekeuinhalgeyo","I'd like to check in, please.",""],
+    ["可以寄放行李嗎？","荷物を預かってもらえますか？","nimotsu o azukatte moraemasu ka","짐 맡길 수 있어요?","jim matgil su isseoyo","Could you keep my luggage for a while?",""],
+    ["Wi-Fi 密碼是什麼？","Wi-Fiのパスワードは何ですか？","waifai no pasuwādo wa nan desu ka","와이파이 비밀번호가 뭐예요?","waipai bimilbeonhoga mwoyeyo","What's the Wi-Fi password?",""]
   ],
   "緊急":[
-    ["請幫幫我。","助けてください。","tasukete kudasai","도와주세요.","dowajuseyo"],
-    ["我身體不舒服。","気分が悪いです。","kibun ga warui desu","몸이 안 좋아요.","momi an joayo"],
-    ["請叫救護車。","救急車を呼んでください。","kyūkyūsha o yonde kudasai","구급차 불러 주세요.","gugeupcha bulleo juseyo"],
-    ["我的東西不見了。","物をなくしました。","mono o nakushimashita","물건을 잃어버렸어요.","mulgeoneul ireobeoryeosseoyo"],
-    ["我不會說當地語言。","日本語が話せません。","nihongo ga hanasemasen","한국어를 못해요.","hangugeoreul motaeyo"]
+    ["請幫幫我。","助けてください。","tasukete kudasai","도와주세요.","dowajuseyo","Please help me.",""],
+    ["我身體不舒服。","気分が悪いです。","kibun ga warui desu","몸이 안 좋아요.","momi an joayo","I don't feel well.",""],
+    ["請叫救護車。","救急車を呼んでください。","kyūkyūsha o yonde kudasai","구급차 불러 주세요.","gugeupcha bulleo juseyo","Please call an ambulance.",""],
+    ["我的東西不見了。","物をなくしました。","mono o nakushimashita","물건을 잃어버렸어요.","mulgeoneul ireobeoryeosseoyo","I've lost my belongings.",""],
+    ["我不會說當地語言。","日本語が話せません。","nihongo ga hanasemasen","한국어를 못해요.","hangugeoreul motaeyo","I don't speak the local language well.",""]
   ]
 };
 
@@ -329,7 +341,7 @@ const store = {
   get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 };
-let country = store.get("country","ja"); if(!C[country]) country="ja";
+let country = store.get("country","ja"); if(!C[country]) country="ja"; // 對方的語言（舊名沿用 country）
 let apiKey = store.get("apiKey","");
 const model = "claude-haiku-5-5"; // 固定用快速版
 let autoSpeak = store.get("autoSpeak",true);
@@ -421,18 +433,17 @@ function errCopy(e){
 const TR_SCHEMA = {type:"object",additionalProperties:false,
   required:["from","text","tip"],
   properties:{
-    from:{type:"string",enum:["zh","ja","ko","other"]},
+    from:{type:"string",enum:["zh","ja","ko","en","other"]},
     text:{type:"string"}, tip:{type:"string"}
   }};
 function contextLines(){
-  return msgs.slice(0,4).reverse().map(m=>(m.who==="me"?"旅客：":"當地人：")+m.zh).join("\n");
+  return msgs.slice(0,4).reverse().map(m=>(m.who==="me"?"旅客：":"對方：")+m.zh).join("\n");
 }
 function toneRules(c){
-  const ja = country==="ja";
-  if(tone==="normal") return `語氣規則（正常）：忠實翻出原意和原本的語氣，不刻意加客套話，也不刻意變得不客氣。翻成${c.lang}時用一般對陌生人說話的自然說法${ja?"（です・ます體）":"（해요體）"}。
+  if(tone==="normal") return `語氣規則（正常）：忠實翻出原意和原本的語氣，不刻意加客套話，也不刻意變得不客氣。翻成${c.lang}時用一般對陌生人說話的自然說法${c.normalForm}。
 - 翻成中文時，保留對方原本的語氣。`;
   return `語氣規則（有禮貌，最重要的原則）：
-- 翻成${c.lang}時，一律用對陌生人、店員、服務人員說話的禮貌語氣。旅客說得直接或像命令（例如「給我水」「這個多少」「快一點」），要改成客氣的請求或詢問，自然地加上當地習慣的禮貌用語（例如${ja?"すみません、お願いします、いただけますか":"저기요、주세요、-아/어 주시겠어요"}），但不可增加或改變原本的意思。
+- 翻成${c.lang}時，一律用對陌生人、店員、服務人員說話的禮貌語氣。旅客說得直接或像命令（例如「給我水」「這個多少」「快一點」），要改成客氣的請求或詢問，自然地加上當地習慣的禮貌用語（例如${c.politeEx}），但不可增加或改變原本的意思。
 - 不用平輩口語、不用命令形，也不要翻出粗魯或失禮的字眼；原文有不禮貌的字，用委婉的說法表達同樣的意思。
 - 翻成中文時，也用客氣、友善的語氣。`;
 }
@@ -440,12 +451,12 @@ function buildPrompt(text, who){
   const c=C[country];
   const target = tone==="polite" ? c.style : c.lang;
   const rule = who==="me"
-    ? `原文是旅客說的中文。翻成${target}，用當地人實際會說的說法，不要逐字直譯。from 填 "zh"。`
+    ? `原文是旅客說的中文。翻成${target}，用母語人士實際會說的說法，不要逐字直譯。from 填 "zh"。`
     : who==="them"
-    ? `原文是當地人說的${c.lang}。翻成台灣用語的繁體中文，口語自然。from 填 "${country}"。`
+    ? `原文是對方說的${c.lang}。翻成台灣用語的繁體中文，口語自然。from 填 "${country}"。`
     : `先判斷原文語言。中文就翻成${target}（from 填 "zh"）；${c.lang}或其他外語就翻成台灣用語的繁體中文（from 填 "${country}" 或 "other"）。`;
   const ctx = contextLines();
-  return `你是台灣旅客在${c.name}和當地人面對面溝通的口譯。${rule}
+  return `你是台灣旅客在${c.name}旅行時，和說${c.lang}的人面對面溝通的口譯。${rule}
 正確是第一原則：意思必須完整、正確，不可漏譯、不可自行增加內容。數字、價格、數量、時間、日期、地名、人名、過敏原、身體狀況等資訊要完全照原文翻出；語音辨識結果明顯有誤又無法判斷時，照最可能的意思翻，並在 tip 用一句話提醒旅客再確認。
 ${toneRules(c)}
 原文來自語音辨識，可能有同音錯字或沒有標點，請依上下文推測原意。
@@ -616,7 +627,7 @@ function setCountry(c){
   document.body.dataset.country=c;
   document.querySelectorAll(".seg button[data-c]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.c===c));
   $("sub").textContent="中文 ⇄ "+C[c].lang;
-  $("themLang").textContent=C[c].native;
+  $("themLangT").textContent=C[c].native;
   msgs=store.get("conv_"+c,[]);
   setMicUI(); renderConv(); renderPhrases(); renderSOS(); updateMenuLbl();
 }
@@ -625,6 +636,12 @@ function updateMenuLbl(){
 }
 function openSheet(on){ $("sheet").hidden=!on; $("sheetBg").hidden=!on }
 document.querySelectorAll(".seg button[data-c]").forEach(b=>b.onclick=()=>setCountry(b.dataset.c));
+// 對方那一側點語言標籤：日本語 → 한국어 → English 輪流切換
+$("themLang").onclick=()=>{
+  if(rec) rec.stop();
+  const next=LANG_ORDER[(LANG_ORDER.indexOf(country)+1)%LANG_ORDER.length];
+  setCountry(next); toast("對方的語言："+C[next].lang);
+};
 function openF2F(on){ $("f2f").hidden=!on; $("main").hidden=on; document.body.classList.toggle("f2f-on",on); if(on) keepAwake(); else releaseAwake() }
 function showTab(k){
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===k));
@@ -677,9 +694,9 @@ function renderPhrases(){
   Object.keys(P).forEach(k=>{const b=el("button",null,k);b.type="button";
     b.setAttribute("aria-pressed",k===cat);b.onclick=()=>{cat=k;renderPhrases()};cats.append(b)});
   const list=$("phr");list.replaceChildren();
-  const ja=country==="ja";
+  const [fi,ri]={ja:[1,2],ko:[3,4],en:[5,6]}[country];
   P[cat].forEach(p=>{
-    const fx=ja?p[1]:p[3], rd=ja?p[2]:p[4];
+    const fx=p[fi], rd=p[ri];
     const b=el("button","item");b.type="button";
     b.append(el("span","zh",p[0]),el("span","fx",fx),el("span","note",rd));
     b.onclick=()=>{openOverlay(fx,p[0]);speak(fx,C[country].sr)};
